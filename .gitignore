@@ -1,0 +1,7 @@
+*.swp
+/local/
+/tmp/
+/dibs/
+/.build/
+/App-Easer-*.tar.gz
+/App-Easer-*/
