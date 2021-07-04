@@ -78,7 +78,7 @@ Call examples:
    Hello, World!
    
    $ ./example.pl commands
-   poletti@polebian:App-Easer (master *%)$ perl lib/App/Easer.pm commands
+   $ perl lib/App/Easer.pm commands
               help: print a help message
           commands: list sub-commands
    
