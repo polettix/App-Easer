@@ -455,7 +455,7 @@ sub stock_help ($self, $config, $args) {
    }
 
    printf {$fh} "Can be called as: %s\n\n", join ', ',
-      $self->{supports}->@* if $self->{supports};
+      $command->{supports}->@* if $command->{supports};
 
    my $options = $command->{options} // [];
    if ($options->@*) {
