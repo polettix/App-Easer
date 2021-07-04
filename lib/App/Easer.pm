@@ -410,7 +410,7 @@ sub stock_CmdLine ($self, $spec, $args) {
 
 sub stock_Default ($self, $spec, @ignore) {
    return {
-      map { $_->{name} => $_->{default} }
+      map { name_for_option($_) => $_->{default} }
       grep { exists $_->{default} }
       ($spec->{options} // [])->@*
    };
