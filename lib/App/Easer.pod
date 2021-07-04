@@ -161,6 +161,7 @@ application managed by C<App::Easer>:
       validate: «executable»
       sources:  «array»
       'auto-children': «false or array»
+      'help-on-stderr': «boolean»
    commands:
       cmd-1:
          «command definition»
@@ -270,6 +271,7 @@ the normal working of C<App::Easer>.
       validate: «executable»
       sources:  «array»
       'auto-children': «false or array»
+      'help-on-stderr': «boolean»
 
 One of the central services provided by C<App::Easer> is the automatic
 gathering of options values from several sources (command line,
@@ -310,6 +312,10 @@ It should be noted that both C<validate> and C<sources> are also part of
 the specific setup for each command. As such, they will be rarely set at
 the higher C<configuration> level and the whole C<configuration> section
 can normally be left out of an application's definition.
+
+Last, option C<help-on-stderr> allows printing the two stock helper
+commands C<help> and C<commands> on standard error instead of standard
+output (which is the default).
 
 =head2 Commands Specifications
 
