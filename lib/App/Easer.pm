@@ -430,13 +430,14 @@ sub stock_Parent ($self, $spec, @ignore) { $self->{configs}[-1] // {} }
 sub stock_commands ($self, $config, $args) {
    die "this command does not support arguments\n" if $args->@*;
    my $target = get_descendant($self, $self->{trail}[-2][0], $args);
+   my $fh = $self->{application}{configuration}{'help-on-stderr'}
+      ? \*STDERR : \*STDOUT;
    my $command = $self->{application}{commands}{$target};
    if (my @children = get_children($self, $command)) {
-      my $fh = \*STDOUT; # FIXME
       print {$fh} list_commands($self, \@children);
    }
    else {
-      warn "no sub-commands\n";
+      print {$fh} "no sub-commands\n";
    }
    return 0;
 }
@@ -444,7 +445,8 @@ sub stock_commands ($self, $config, $args) {
 sub stock_help ($self, $config, $args) {
    my $target = get_descendant($self, $self->{trail}[-2][0], $args);
    my $command = $self->{application}{commands}{$target};
-   my $fh = \*STDOUT; # FIXME
+   my $fh = $self->{application}{configuration}{'help-on-stderr'}
+      ? \*STDERR : \*STDOUT;
 
    print {$fh} $command->{help}, "\n\n";
    
