@@ -34,6 +34,8 @@
             "Dist::Milla" : "v1.0.20",
             "Path::Tiny" : "0.084",
             "Template::Perlish" : "1.52",
+            "Test::Exception" : "0.43",
+            "Test::Output" : "1.033",
             "Test::Pod" : "1.51",
             "Test::Pod::Coverage" : "1.04"
          }
@@ -50,6 +52,17 @@
       }
    },
    "release_status" : "stable",
+   "resources" : {
+      "bugtracker" : {
+         "web" : "https://github.com/polettix/App-Easer/issues"
+      },
+      "homepage" : "https://github.com/polettix/App-Easer",
+      "repository" : {
+         "type" : "git",
+         "url" : "https://github.com/polettix/App-Easer.git",
+         "web" : "https://github.com/polettix/App-Easer"
+      }
+   },
    "version" : "0.001",
    "x_contributors" : [
       "Flavio Poletti <flavio@polettix.it>"
