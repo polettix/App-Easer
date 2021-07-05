@@ -31,34 +31,33 @@ This document describes App::Easer version {{\[ version \]}}.
 
     #!/usr/bin/env perl
     use v5.24;
+    use experimental 'signatures';
     use App::Easer 'run';
-    exit run(
-       {
-          commands => {
-             MAIN => {
-                name => 'main app',
-                help => 'this is the main app',
-                description => 'Yes, this really is the main app',
-                options => [
-                   {
-                      name => 'foo',
-                      description => 'option foo!',
-                      getopt => 'foo|f=s',
-                      environment => 'FOO',
-                      default => 'bar',
-                   },
-                ],
-                execute => sub ($global, $conf, $args) {
-                   my $foo = $conf->{foo};
-                   say "Hello, $foo!";
-                   return 0;
+    my $app = {
+       commands => {
+          MAIN => {
+             name => 'main app',
+             help => 'this is the main app',
+             description => 'Yes, this really is the main app',
+             options => [
+                {
+                   name => 'foo',
+                   description => 'option foo!',
+                   getopt => 'foo|f=s',
+                   environment => 'FOO',
+                   default => 'bar',
                 },
-                'default-child' => '', # run execute by default
+             ],
+             execute => sub ($global, $conf, $args) {
+                my $foo = $conf->{foo};
+                say "Hello, $foo!";
+                return 0;
              },
+             'default-child' => '', # run execute by default
           },
        },
-       [@ARGV]
-    );
+    };
+    exit run($app, [@ARGV]);
 
 Call examples:
 
@@ -69,7 +68,7 @@ Call examples:
     Hello, World!
     
     $ ./example.pl commands
-    poletti@polebian:App-Easer (master *%)$ perl lib/App/Easer.pm commands
+    $ perl lib/App/Easer.pm commands
                help: print a help message
            commands: list sub-commands
     
@@ -151,6 +150,7 @@ application managed by `App::Easer`:
        validate: «executable»
        sources:  «array»
        'auto-children': «false or array»
+       'help-on-stderr': «boolean»
     commands:
        cmd-1:
           «command definition»
@@ -233,6 +233,7 @@ the normal working of `App::Easer`.
        validate: «executable»
        sources:  «array»
        'auto-children': «false or array»
+       'help-on-stderr': «boolean»
 
 One of the central services provided by `App::Easer` is the automatic
 gathering of options values from several sources (command line,
@@ -273,6 +274,10 @@ It should be noted that both `validate` and `sources` are also part of
 the specific setup for each command. As such, they will be rarely set at
 the higher `configuration` level and the whole `configuration` section
 can normally be left out of an application's definition.
+
+Last, option `help-on-stderr` allows printing the two stock helper
+commands `help` and `commands` on standard error instead of standard
+output (which is the default).
 
 ## Commands Specifications
 
