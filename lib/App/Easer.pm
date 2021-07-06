@@ -38,10 +38,7 @@ sub collect ($self, $spec, $args) {
 
    my $merger = merger($self, $spec);
 
-   my $sources = $spec->{sources}
-     // $self->{application}{configuration}{sources}
-     // [qw< +CmdLine +Environment +Parent +Default >];
-   for my $source_spec ($sources->@*) {
+   for my $source_spec (sources($self, $spec, $args)) {
       my ($src, $src_cnf) =
         'ARRAY' eq ref $source_spec
         ? $source_spec->@*
@@ -381,6 +378,14 @@ sub run ($application, $args) {
 
    return execute($self, $args) // 0;
 } ## end sub run
+
+sub sources ($self, $spec, $args) {
+   my $s = $spec->{sources}
+     // $self->{application}{configuration}{sources}
+     // \&stock_sources;
+   $s = $self->{factory}->($s, 'sources')->() if 'ARRAY' ne ref $s;
+   return $s->@*;
+}
 
 sub stock_CmdLine ($self, $spec, $args) {
    my @args = $args->@*;
