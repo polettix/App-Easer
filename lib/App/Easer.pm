@@ -357,7 +357,7 @@ sub run ($application, $args) {
 sub sources ($self, $spec, $args) {
    my $s = $spec->{sources}
      // $self->{application}{configuration}{sources}
-     // \&stock_sources;
+     // \&stock_DefaultSources;
    $s = $self->{factory}->($s, 'sources')->() if 'ARRAY' ne ref $s;
    return $s->@*;
 }
