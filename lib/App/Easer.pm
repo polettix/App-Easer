@@ -178,36 +178,6 @@ sub execute ($self, $args) {
    return $executable->($self, $config, $args);
 }
 
-sub factory ($executable, $default_subname = '', $opts = {}) {
-   return $executable if 'CODE' eq ref $executable;    # easy
-   state $factory = sub ($executable, $default_subname) {
-      return eval $executable if $executable =~ m{\A \s}mxs;
-      my @prefixes =
-          !defined $opts->{prefixes}       ? ()
-        : 'ARRAY' eq ref $opts->{prefixes} ? ($opts->{prefixes}->@*)
-        :                                    ($opts->{prefixes});
-      push @prefixes, {'+' => 'App::Easer#stock_'};
-    SEARCH:
-      for my $expansion_for (@prefixes) {
-         for my $p (keys $expansion_for->%*) {
-            next if $p ne substr $executable, 0, length $p;
-            substr $executable, 0, length $p, $expansion_for->{$p};
-            last SEARCH;
-         }
-      } ## end SEARCH: for my $expansion_for (...)
-      my ($package, $sname) = split m{\#}mxs, $executable;
-      $sname = $default_subname unless defined $sname && length $sname;
-      if (my $s = $package->can($sname)) { return $s }
-      (my $path = "$package.pm") =~ s{::}{/}gmxs;
-      require $path;
-      if (my $s = $package->can($sname)) { return $s }
-      die "no '$sname' in '$package'\n";
-   };
-   state $cache = {};
-   return $cache->{$executable . ' ' . $default_subname} //=
-     $factory->($executable, $default_subname);
-} ## end sub factory
-
 sub fetch_subcommand ($self, $spec, $args) {
    my @children = get_children($self, $spec) or return;
    my ($candidate, $candidate_from_args);
@@ -236,9 +206,9 @@ sub fetch_subcommand ($self, $spec, $args) {
 }
 
 sub generate_factory ($c) {
-   my $wrapped = \&factory;    # use our stock factory by default
-   $wrapped = factory($c->{create}, 'factory', $c) if defined $c->{create};
-   return sub ($e, $d = '') { $wrapped->($e, $d, $c) };
+   my $w = \&stock_factory;    # default factory
+   $w = stock_factory($c->{create}, 'factory', $c) if defined $c->{create};
+   return sub ($e, $d = '') { $w->($e, $d, $c) };
 }
 
 sub get_child ($self, $spec, $name) {
@@ -450,6 +420,36 @@ sub stock_commands ($self, $config, $args) {
    }
    return 0;
 }
+
+sub stock_factory ($executable, $default_subname = '', $opts = {}) {
+   return $executable if 'CODE' eq ref $executable;    # easy
+   state $factory = sub ($executable, $default_subname) {
+      return eval $executable if $executable =~ m{\A \s}mxs;
+      my @prefixes =
+          !defined $opts->{prefixes}       ? ()
+        : 'ARRAY' eq ref $opts->{prefixes} ? ($opts->{prefixes}->@*)
+        :                                    ($opts->{prefixes});
+      push @prefixes, {'+' => 'App::Easer#stock_'};
+    SEARCH:
+      for my $expansion_for (@prefixes) {
+         for my $p (keys $expansion_for->%*) {
+            next if $p ne substr $executable, 0, length $p;
+            substr $executable, 0, length $p, $expansion_for->{$p};
+            last SEARCH;
+         }
+      } ## end SEARCH: for my $expansion_for (...)
+      my ($package, $sname) = split m{\#}mxs, $executable;
+      $sname = $default_subname unless defined $sname && length $sname;
+      if (my $s = $package->can($sname)) { return $s }
+      (my $path = "$package.pm") =~ s{::}{/}gmxs;
+      require $path;
+      if (my $s = $package->can($sname)) { return $s }
+      die "no '$sname' in '$package'\n";
+   };
+   state $cache = {};
+   return $cache->{$executable . ' ' . $default_subname} //=
+     $factory->($executable, $default_subname);
+} ## end sub factory
 
 sub stock_help ($self, $config, $args) {
    my $target = get_descendant($self, $self->{trail}[-2][0], $args);
