@@ -669,6 +669,10 @@ is thrown (C<no '$subname' in '$package'>);
 
 =head2 params_validate
 
+=head2 print_commands
+
+=head2 print_help
+
 =head2 slurp
 
 =head2 sources
@@ -687,7 +691,7 @@ is thrown (C<no '$subname' in '$package'>);
 
 =head2 stock_Parent
 
-=head2 stock_sources
+=head2 stock_DefaultSources
 
 =head2 stock_commands
 
