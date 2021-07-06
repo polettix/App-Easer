@@ -11,25 +11,25 @@ our @EXPORT_OK = qw< d run >;
 sub add_auto_commands ($application) {
    my $commands = $application->{commands};
    $commands->{help} //= {
-      name => 'help',
-      supports => ['help'],
-      help => 'print a help message',
-      description => 'print help for (sub)command',
+      name                     => 'help',
+      supports                 => ['help'],
+      help                     => 'print a help message',
+      description              => 'print help for (sub)command',
       'allow-residual-options' => 0,
-      'no-auto' => '*',
-      execute => \&stock_help,
+      leaf                     => 1,
+      execute                  => \&stock_help,
    };
    $commands->{commands} //= {
-      name => 'commands',
-      supports => ['commands'],
-      help => 'list sub-commands',
-      description => 'Print list of supported sub-commands',
+      name                     => 'commands',
+      supports                 => ['commands'],
+      help                     => 'list sub-commands',
+      description              => 'Print list of supported sub-commands',
       'allow-residual-options' => 0,
-      children => undef,
-      execute => \&stock_commands,
+      leaf                     => 1,
+      execute                  => \&stock_commands,
    };
    return $application;
-}
+} ## end sub add_auto_commands ($application)
 
 sub collect ($self, $spec, $args) {
    my @sequence;
@@ -49,7 +49,7 @@ sub collect ($self, $spec, $args) {
       push @residual_args, $residual_args->@* if defined $residual_args;
       push @sequence, $slice;
       $config = $merger->(@sequence);
-   } ## end for my $source_spec ($sources...)
+   } ## end for my $source_spec (sources...)
 
    return ($config, \@residual_args);
 } ## end sub collect
@@ -76,9 +76,11 @@ sub commandline_help ($getopt) {
    elsif (substr($getopt, -1, 1) eq '+') {
       $mode = 'increment';
       substr $getopt, -1, 1, '';
-      push @retval, 'incremental option (adds 1 every time it is provided)';
-   }
-   elsif ($getopt =~ s<(
+      push @retval,
+        'incremental option (adds 1 every time it is provided)';
+   } ## end elsif (substr($getopt, -1...))
+   elsif (
+      $getopt =~ s<(
          [:=])    # 1 mode
          ([siof]) # 2 type
          ([@%])?  # 3 desttype
@@ -88,12 +90,14 @@ sub commandline_help ($getopt) {
                ,?
                (\d*)? # 5 max
             \}
-         )? \z><>mxs) {
-      $mode = $1 eq '=' ? 'mandatory' : 'optional';
-      $type = $2;
+         )? \z><>mxs
+     )
+   {
+      $mode     = $1 eq '=' ? 'mandatory' : 'optional';
+      $type     = $2;
       $desttype = $3;
-      $min = $4;
-      $max = $5;
+      $min      = $4;
+      $max      = $5;
       if (defined $min) {
          $mode = $min ? 'optional' : 'required';
       }
@@ -105,51 +109,52 @@ sub commandline_help ($getopt) {
       }->{$type};
       my $line = "$mode $type option";
       $line .= ", at least $min times" if defined($min) && $min > 1;
-      $line .= ", no more than $max times" if defined($max) && length($max);
+      $line .= ", no more than $max times"
+        if defined($max) && length($max);
       $line .= ", list valued" if defined($desttype) && $desttype eq '@';
       push @retval, $line;
-   }
+   } ## end elsif ($getopt =~ s<(          )? \z><>mxs)
    elsif ($getopt =~ s<: (\d+) ([@%])? \z><>mxs) {
-      $mode = 'optional';
-      $type = 'i';
-      $default = $1;
+      $mode     = 'optional';
+      $type     = 'i';
+      $default  = $1;
       $desttype = $2;
       my $line = "optional integer, defaults to $default";
       $line .= ", list valued" if defined($desttype) && $desttype eq '@';
       push @retval, $line;
-   }
+   } ## end elsif ($getopt =~ s<: (\d+) ([@%])? \z><>mxs)
    elsif ($getopt =~ s<:+ ([@%])? \z><>mxs) {
-      $mode = 'optional';
-      $type = 'i';
-      $default = 'increment';
+      $mode     = 'optional';
+      $type     = 'i';
+      $default  = 'increment';
       $desttype = $1;
       my $line = "optional integer, current value incremented if omitted";
       $line .= ", list valued" if defined($desttype) && $desttype eq '@';
       push @retval, $line;
-   }
+   } ## end elsif ($getopt =~ s<:+ ([@%])? \z><>mxs)
 
    my @alternatives = split /\|/, $getopt;
    if ($type eq 'bool') {
       push @retval, map {
-         if (length($_) == 1) { "-$_" }
-         else { "--$_ | --no-$_" }
+         if   (length($_) == 1) { "-$_" }
+         else                   { "--$_ | --no-$_" }
       } @alternatives;
-   }
+   } ## end if ($type eq 'bool')
    elsif ($mode eq 'optional') {
       push @retval, map {
-         if (length($_) == 1) { "-$_ [<value>]" }
-         else { "--$_ [<value>]" }
+         if   (length($_) == 1) { "-$_ [<value>]" }
+         else                   { "--$_ [<value>]" }
       } @alternatives;
-   }
+   } ## end elsif ($mode eq 'optional')
    else {
       push @retval, map {
-         if (length($_) == 1) { "-$_ <value>" }
-         else { "--$_ <value>" }
+         if   (length($_) == 1) { "-$_ <value>" }
+         else                   { "--$_ <value>" }
       } @alternatives;
-   }
+   } ## end else [ if ($type eq 'bool') ]
 
    return @retval;
-}
+} ## end sub commandline_help ($getopt)
 
 sub commit_configuration ($self, $spec, $args) {
    my $commit = $spec->{commit} // return;
@@ -161,7 +166,7 @@ sub d (@stuff) {
    require Data::Dumper;
    local $Data::Dumper::Indent = 1;
    warn Data::Dumper::Dumper(@stuff % 2 ? \@stuff : {@stuff});
-}
+} ## end sub d (@stuff)
 
 sub default_getopt_config ($has_children) {
    my @r = qw< gnu_getopt >;
@@ -170,19 +175,19 @@ sub default_getopt_config ($has_children) {
 }
 
 sub execute ($self, $args) {
-   my $command = $self->{trail}[-1][0];
+   my $command    = $self->{trail}[-1][0];
    my $executable = $self->{application}{commands}{$command}{execute}
-      or die "no executable for '$command'\n";
-   $executable = $self->{factory}->($executable, 'execute'); # "resolve"
+     or die "no executable for '$command'\n";
+   $executable = $self->{factory}->($executable, 'execute');    # "resolve"
    my $config = $self->{configs}[-1] // {};
    return $executable->($self, $config, $args);
-}
+} ## end sub execute
 
 sub fetch_subcommand ($self, $spec, $args) {
    my @children = get_children($self, $spec) or return;
    my ($candidate, $candidate_from_args);
    if ($args->@*) {
-      $candidate = $args->[0];
+      $candidate           = $args->[0];
       $candidate_from_args = 1;
    }
    elsif (exists $spec->{'default-child'}) {
@@ -200,10 +205,10 @@ sub fetch_subcommand ($self, $spec, $args) {
       return ($child, $candidate);
    }
    my @names = map { $_->[1] } $self->{trail}->@*;
-   shift @names; # remove first one
+   shift @names;    # remove first one
    my $path = join '/', @names, $candidate;
    die "cannot find sub-command '$path'\n";
-}
+} ## end sub fetch_subcommand
 
 sub generate_factory ($c) {
    my $w = \&stock_factory;    # default factory
@@ -214,26 +219,29 @@ sub generate_factory ($c) {
 sub get_child ($self, $spec, $name) {
    for my $child (get_children($self, $spec)) {
       my $command = $self->{application}{commands}{$child};
-      next unless grep { $_ eq $name }
-         ($command->{supports} //= [$child])->@*;
+      next
+        unless grep { $_ eq $name }
+        ($command->{supports} //= [$child])->@*;
       return $child;
-   }
+   } ## end for my $child (get_children...)
    return;
-}
+} ## end sub get_child
 
 sub get_children ($self, $spec) {
    return if $spec->{leaf};
-   return if exists($spec->{children}) && ! $spec->{children};
+   return if exists($spec->{children}) && !$spec->{children};
    my @children = ($spec->{children} // [])->@*;
-   return if $self->{application}{configuration}{'auto-leaves'}
-      && @children == 0; # no auto-children for leaves under auto-leaves
-   my @auto = exists $self->{application}{configuration}{'auto-children'}
-      ? (($self->{application}{configuration}{'auto-children'} // [])->@*)
-      : (qw< help commands >);
+   return
+     if $self->{application}{configuration}{'auto-leaves'}
+     && @children == 0;    # no auto-children for leaves under auto-leaves
+   my @auto =
+     exists $self->{application}{configuration}{'auto-children'}
+     ? (($self->{application}{configuration}{'auto-children'} // [])->@*)
+     : (qw< help commands >);
    if (exists $spec->{'no-auto'}) {
       if (ref $spec->{'no-auto'}) {
-         my %no = map {$_ => 1} $spec->{'no-auto'}->@*;
-         @auto = grep {! $no{$_}} @auto;
+         my %no = map { $_ => 1 } $spec->{'no-auto'}->@*;
+         @auto = grep { !$no{$_} } @auto;
       }
       elsif ($spec->{'no-auto'} eq '*') {
          @auto = ();
@@ -241,45 +249,47 @@ sub get_children ($self, $spec) {
       else {
          die "invalid no-auto, array or '*' are allowed\n";
       }
-   }
+   } ## end if (exists $spec->{'no-auto'...})
    return (@children, @auto);
-}
+} ## end sub get_children
 
 sub get_descendant ($self, $start, $list) {
    my $target = $start;
-   my $cmds = $self->{application}{commands};
+   my $cmds   = $self->{application}{commands};
    my $path;
    for my $desc ($list->@*) {
       $path = defined($path) ? "$path/$desc" : $desc;
       my $command = $cmds->{$target}
-         or die "cannot find sub-command '$path'\n";
+        or die "cannot find sub-command '$path'\n";
       defined($target = get_child($self, $command, $desc))
-         or die "cannot find sub-command '$path'\n";
-   }
+        or die "cannot find sub-command '$path'\n";
+   } ## end for my $desc ($list->@*)
 
    # check that this last is associated to a real command
    $cmds->{$target} or die "cannot find sub-command '$path'\n";
 
    return $target;
-}
+} ## end sub get_descendant
 
-sub hash_merge { return {map { $_->%* } reverse @_} }
+sub hash_merge {
+   return {map { $_->%* } reverse @_};
+}
 
 sub list_commands ($self, $children) {
    my $retval = '';
    open my $fh, '>', \$retval;
    for my $child ($children->@*) {
       my $command = $self->{application}{commands}{$child};
-      my $help = $command->{help};
+      my $help    = $command->{help};
       my @aliases = ($command->{supports} // [$child])->@*;
       next unless @aliases;
       printf {$fh} "%15s: %s\n", shift(@aliases), $help;
       printf {$fh} "%15s  (also as: %s)\n", '', join ', ', @aliases
-         if @aliases;
-   }
+        if @aliases;
+   } ## end for my $child ($children...)
    close $fh;
    return $retval;
-}
+} ## end sub list_commands
 
 sub load_application ($application) {
    return $application if 'HASH' eq ref $application;
@@ -290,24 +300,22 @@ sub load_application ($application) {
    }
    else {
       my $fh =
-      'GLOB' eq ref $application
-      ? $application
-      : do {
+        'GLOB' eq ref $application
+        ? $application
+        : do {
          open my $fh, '<:encoding(UTF-8)', $application
-            or die "cannot open '$application'\n";
+           or die "cannot open '$application'\n";
          $fh;
-      };
+        };
       local $/;    # slurp mode
       $text = <$fh>;
       close $fh;
-   }
+   } ## end else [ if ('SCALAR' eq ref $application)]
 
    return eval {
       require JSON::PP;
       JSON::PP::decode_json($text);
-   } // eval {
-      eval $text;
-   } // die "cannot load application\n";
+   } // eval { eval $text; } // die "cannot load application\n";
 } ## end sub load_application ($application)
 
 sub merger ($self, $spec = {}) {
@@ -321,13 +329,14 @@ sub name_for_option ($o) {
    return $1 if defined $o->{getopt} && $o->{getopt} =~ m{\A(\w+)}mxs;
    return lc $o->{environment} if defined $o->{environment};
    return '~~~';
-}
+} ## end sub name_for_option ($o)
 
 sub params_validate ($self, $spec, $args) {
-   my $validator = $spec->{validate} // $self->{application}{configuration}{validate} // return;
+   my $validator = $spec->{validate}
+     // $self->{application}{configuration}{validate} // return;
    require Params::Validate;
    Params::Validate::validate($self->{configs}[-1]->%*, $validator);
-}
+} ## end sub params_validate
 
 sub run ($application, $args) {
    $application = add_auto_commands(load_application($application));
@@ -360,29 +369,28 @@ sub sources ($self, $spec, $args) {
      // \&stock_DefaultSources;
    $s = $self->{factory}->($s, 'sources')->() if 'ARRAY' ne ref $s;
    return $s->@*;
-}
+} ## end sub sources
 
 sub stock_CmdLine ($self, $spec, $args) {
    my @args = $args->@*;
-   my $goc = $spec->{getopt_config}
-      // default_getopt_config(scalar(get_children($self, $spec)));
+   my $goc  = $spec->{getopt_config}
+     // default_getopt_config(scalar(get_children($self, $spec)));
    require Getopt::Long;
    Getopt::Long::Configure('default', $goc->@*);
 
    my %option_for;
    my @specs = map {
-         my $go = $_->{getopt};
-         ref($go) eq 'ARRAY'
-         ? ( $go->[0] => sub { $go->[1]->(\%option_for, @_) } )
-         : $go;
-      }
-      grep { exists $_->{getopt} }
-      ($spec->{options} // [])->@*;
+      my $go = $_->{getopt};
+      ref($go) eq 'ARRAY'
+        ? ($go->[0] => sub { $go->[1]->(\%option_for, @_) })
+        : $go;
+     }
+     grep { exists $_->{getopt} } ($spec->{options} // [])->@*;
    Getopt::Long::GetOptionsFromArray(\@args, \%option_for, @specs)
-      or die "bailing out\n";
+     or die "bailing out\n";
 
    # Check if we want to forbid the residual @args to start with a '-'
-   my $strict = ! $spec->{'allow-residual-optionss'};
+   my $strict = !$spec->{'allow-residual-optionss'};
    if ($strict && @args && $args[0] =~ m{\A -}mxs) {
       Getopt::Long::Configure('default', 'gnu_getopt');
       Getopt::Long::GetOptionsFromArray(\@args, {});
@@ -390,7 +398,7 @@ sub stock_CmdLine ($self, $spec, $args) {
    }
 
    return (\%option_for, \@args);
-}
+} ## end sub stock_CmdLine
 
 sub slurp ($file, $mode = '<:encoding(UTF-8)') {
    open my $fh, $mode, $file or die "open('$file'): $!\n";
@@ -400,46 +408,47 @@ sub slurp ($file, $mode = '<:encoding(UTF-8)') {
 
 sub stock_JsonFileFromConfig ($self, $spec, $args) {
    my $key = $spec->{'config-option'} // 'config';
-   return {} if ! exists($spec->{config}{$key});
+   return {} if !exists($spec->{config}{$key});
    require JSON::PP;
    return JSON::PP::decode_json(slurp($spec->{config}{$key}));
-}
+} ## end sub stock_JsonFileFromConfig
 
 sub stock_JsonFiles ($self, $spec, @ignore) {
    return merger($self, $spec)->(
       map {
          require JSON::PP;
          JSON::PP::decode_json(slurp($_));
-      }
-      grep { -e $_ } ($spec->{'config-files'} // [])->@*
+        }
+        grep { -e $_ } ($spec->{'config-files'} // [])->@*
    );
-}
+} ## end sub stock_JsonFiles
 
 sub stock_Default ($self, $spec, @ignore) {
    return {
       map { name_for_option($_) => $_->{default} }
-      grep { exists $_->{default} }
-      ($spec->{options} // [])->@*
+      grep { exists $_->{default} } ($spec->{options} // [])->@*
    };
-}
+} ## end sub stock_Default
 
 sub stock_Environment ($self, $spec, @ignore) {
    return {
       map { name_for_option($_) => $ENV{$_->{environment}} }
-      grep {
-         exists($_->{environment}) && exists($ENV{$_->{environment}})
-      }
-      ($spec->{options} // [])->@*
+        grep {
+              exists($_->{environment})
+           && exists($ENV{$_->{environment}})
+        } ($spec->{options} // [])->@*
    };
-}
+} ## end sub stock_Environment
 
 sub stock_Parent ($self, $spec, @ignore) { $self->{configs}[-1] // {} }
 
 sub stock_commands ($self, $config, $args) {
    die "this command does not support arguments\n" if $args->@*;
    my $target = get_descendant($self, $self->{trail}[-2][0], $args);
-   my $fh = $self->{application}{configuration}{'help-on-stderr'}
-      ? \*STDERR : \*STDOUT;
+   my $fh =
+     $self->{application}{configuration}{'help-on-stderr'}
+     ? \*STDERR
+     : \*STDOUT;
    my $command = $self->{application}{commands}{$target};
    if (my @children = get_children($self, $command)) {
       print {$fh} list_commands($self, \@children);
@@ -448,7 +457,7 @@ sub stock_commands ($self, $config, $args) {
       print {$fh} "no sub-commands\n";
    }
    return 0;
-}
+} ## end sub stock_commands
 
 sub stock_factory ($executable, $default_subname = '', $opts = {}) {
    state $factory = sub ($executable, $default_subname) {
@@ -486,64 +495,74 @@ sub stock_factory ($executable, $default_subname = '', $opts = {}) {
 
    my $args;
    ($executable, $args) = ($executable->{executable}, $executable)
-      if 'HASH' eq ref $executable;
+     if 'HASH' eq ref $executable;
    $executable = $cache->{$executable . ' ' . $default_subname} //=
-      $factory->($executable, $default_subname) if 'CODE' ne ref $executable;
+     $factory->($executable, $default_subname)
+     if 'CODE' ne ref $executable;
    return $executable unless $args;
    return sub { $executable->($args, @_) };
-} ## end sub factory
+} ## end sub stock_factory
 
 sub stock_help ($self, $config, $args) {
    my $target = get_descendant($self, $self->{trail}[-2][0], $args);
    my $command = $self->{application}{commands}{$target};
-   my $fh = $self->{application}{configuration}{'help-on-stderr'}
-      ? \*STDERR : \*STDOUT;
+   my $fh =
+     $self->{application}{configuration}{'help-on-stderr'}
+     ? \*STDERR
+     : \*STDOUT;
 
    print {$fh} $command->{help}, "\n\n";
-   
-   if (defined (my $description = $command->{description})) {
-      $description =~ s{\A\s+|\s+\z}{}gmxs; # trim
-      $description =~ s{^}{    }gmxs; # add some indentation
+
+   if (defined(my $description = $command->{description})) {
+      $description =~ s{\A\s+|\s+\z}{}gmxs;    # trim
+      $description =~ s{^}{    }gmxs;          # add some indentation
       print {$fh} "Description:\n$description\n\n";
    }
 
    printf {$fh} "Can be called as: %s\n\n", join ', ',
-      $command->{supports}->@* if $command->{supports};
+     $command->{supports}->@*
+     if $command->{supports};
 
    my $options = $command->{options} // [];
    if ($options->@*) {
       print {$fh} "Options:\n";
       for my $option ($options->@*) {
-         printf {$fh} "%15s: %s\n", name_for_option($option), $option->{help} // '';
+         printf {$fh} "%15s: %s\n", name_for_option($option),
+           $option->{help} // '';
 
          if (exists $option->{getopt}) {
             my @lines = commandline_help($option->{getopt});
             printf {$fh} "%15s  command-line: %s\n", '', shift(@lines);
             printf {$fh} "%15s                %s\n", '', $_ for @lines;
          }
-         printf {$fh} "%15s  environment : %s\n", '', $option->{environment} // '*undef*'
-            if exists $option->{environment};
-         printf {$fh} "%15s  default     : %s\n", '', $option->{default} // '*undef*'
-            if exists $option->{default};
-      }
+         printf {$fh} "%15s  environment : %s\n", '',
+           $option->{environment} // '*undef*'
+           if exists $option->{environment};
+         printf {$fh} "%15s  default     : %s\n", '',
+           $option->{default} // '*undef*'
+           if exists $option->{default};
+      } ## end for my $option ($options...)
       print {$fh} "\n";
-   }
+   } ## end if ($options->@*)
    else {
       print {$fh} "This command has no options.\n\n";
    }
 
    if (my @children = get_children($self, $command)) {
-      print {$fh} "Sub commands:\n", list_commands($self, \@children), "\n";
+      print {$fh} "Sub commands:\n", list_commands($self, \@children),
+        "\n";
    }
    return 0;
-}
+} ## end sub stock_help
 
-sub stock_DefaultSources { [qw< +CmdLine +Environment +Parent +Default >] };
+sub stock_DefaultSources { [qw< +CmdLine +Environment +Parent +Default >] }
 
 sub stock_SourcesWithFiles {
-   [qw< +CmdLine +Environment +Parent +JsonFileFromConfig +JsonFiles
-      +Default >]
-};
+   [
+      qw< +CmdLine +Environment +Parent +JsonFileFromConfig +JsonFiles
+        +Default >
+   ]
+} ## end sub stock_SourcesWithFiles
 
 sub validate_configuration ($self, $spec, $args) {
    my $from_spec = $spec->{validate};
@@ -555,26 +574,26 @@ sub validate_configuration ($self, $spec, $args) {
    elsif (defined $from_self && 'HASH' ne ref $from_self) {
       $validator = $self->{factory}->($from_self, 'validate');
    }
-   else { # use stock one
+   else {    # use stock one
       $validator = \&params_validate;
    }
    $validator->($self, $spec, $args);
-}
+} ## end sub validate_configuration
 
 exit run(
    $ENV{APPEASER} // {
       commands => {
          MAIN => {
-            name => 'main app',
-            help => 'this is the main app',
+            name        => 'main app',
+            help        => 'this is the main app',
             description => 'Yes, this really is the main app',
-            options => [
+            options     => [
                {
-                  name => 'foo',
+                  name        => 'foo',
                   description => 'option foo!',
-                  getopt => 'foo|f=s',
+                  getopt      => 'foo|f=s',
                   environment => 'FOO',
-                  default => 'bar',
+                  default     => 'bar',
                },
             ],
             execute => sub ($global, $conf, $args) {
@@ -582,7 +601,7 @@ exit run(
                say "Hello, $foo!";
                return 0;
             },
-            'default-child' => '', # run execute by default
+            'default-child' => '',    # run execute by default
          },
       },
    },
@@ -590,11 +609,3 @@ exit run(
 ) unless caller;
 
 1;
-
-=pod
-
-=encoding utf8
-
-
-
-=cut
