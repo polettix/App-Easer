@@ -37,6 +37,8 @@ is $factory->('~~func', 'x')->(), 'Other', 'resolution to Other (external module
 is $factory->('main#thefunc', 'x')->(), 'main', 'resolution to main';
 is $factory->('main', 'thefunc')->(), 'main', 'resolution to main (via default sub name)';
 is $factory->(sub {'a sub!'}, 'x')->(), 'a sub!', 'a sub reference';
+is $factory->('= sub { "inline" }', '')->(), 'inline', 'some inline Perl code';
+is $factory->({executable => sub { return $_[0]{message}}, message => 'hashref'}, '')->(), 'hashref', 'hash reference as executable';
 
 my $sub1 = $factory->('+help', '');
 my $sub2 = \&App::Easer::stock_help;

@@ -451,9 +451,7 @@ sub stock_commands ($self, $config, $args) {
 }
 
 sub stock_factory ($executable, $default_subname = '', $opts = {}) {
-   return $executable if 'CODE' eq ref $executable;    # easy
    state $factory = sub ($executable, $default_subname) {
-      return eval $executable if $executable =~ m{\A \s}mxs;
       my @prefixes =
           !defined $opts->{prefixes}       ? ()
         : 'ARRAY' eq ref $opts->{prefixes} ? ($opts->{prefixes}->@*)
@@ -467,17 +465,32 @@ sub stock_factory ($executable, $default_subname = '', $opts = {}) {
             last SEARCH;
          }
       } ## end SEARCH: for my $expansion_for (...)
+
+      # if it *still* "starts" with '=', it's "inline" Perl code
+      return eval $executable if $executable =~ s{\A \s* = \s* }{}mxs;
+
       my ($package, $sname) = split m{\#}mxs, $executable;
       $sname = $default_subname unless defined $sname && length $sname;
+
+      # first try to see if the sub is already available in $package
       if (my $s = $package->can($sname)) { return $s }
+
+      # otherwise force loading of $package and retry
       (my $path = "$package.pm") =~ s{::}{/}gmxs;
       require $path;
       if (my $s = $package->can($sname)) { return $s }
+
       die "no '$sname' in '$package'\n";
    };
    state $cache = {};
-   return $cache->{$executable . ' ' . $default_subname} //=
-     $factory->($executable, $default_subname);
+
+   my $args;
+   ($executable, $args) = ($executable->{executable}, $executable)
+      if 'HASH' eq ref $executable;
+   $executable = $cache->{$executable . ' ' . $default_subname} //=
+      $factory->($executable, $default_subname) if 'CODE' ne ref $executable;
+   return $executable unless $args;
+   return sub { $executable->($args, @_) };
 } ## end sub factory
 
 sub stock_help ($self, $config, $args) {
