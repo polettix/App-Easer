@@ -114,6 +114,12 @@ Call examples:
 
 # DESCRIPTION
 
+**NOTE**: this software should be considered "late alpha" maturity. I'm
+mostly happy with the interface, but there are still a few things that
+might get changed. _Anyway_, if you find a release of `App::Easer` to
+work fine for you, it's fair to assume that you will not need to get a
+newer one later.
+
 App::Easer provides the scaffolding for implementing hierarchical
 command-line applications in a very fast way.
 
@@ -149,8 +155,9 @@ application managed by `App::Easer`:
        merge:    «executable»
        validate: «executable»
        sources:  «array»
-       'auto-children': «false or array»
+       'auto-children':  «false or array»
        'help-on-stderr': «boolean»
+       'auto-leaves':    «boolean»
     commands:
        cmd-1:
           «command definition»
@@ -234,6 +241,7 @@ the normal working of `App::Easer`.
        sources:  «array»
        'auto-children': «false or array»
        'help-on-stderr': «boolean»
+       'auto-leaves':    «boolean»
 
 One of the central services provided by `App::Easer` is the automatic
 gathering of options values from several sources (command line,
@@ -275,9 +283,13 @@ the specific setup for each command. As such, they will be rarely set at
 the higher `configuration` level and the whole `configuration` section
 can normally be left out of an application's definition.
 
-Last, option `help-on-stderr` allows printing the two stock helper
+Option `help-on-stderr` allows printing the two stock helper
 commands `help` and `commands` on standard error instead of standard
 output (which is the default).
+
+Option `auto-leaves` allows setting any command that has no _explicit_
+sub-command as a leaf, which prevents it from getting a `help` and a
+`commands` sub-command (or whatever has been put to override them).
 
 ## Commands Specifications
 
@@ -299,6 +311,7 @@ The command definition is a hash with the following shape:
         default: gargle
     execute: «executable»
     children: ['foo.bar', 'baz']
+    leaf: 0
     allow-residual-options: 0
     collect:  «executable»
     merge: «merge»
@@ -345,6 +358,12 @@ The following keys are supported:
     a command as a _leaf_ (missing also sub-commands `help`/`commands`)
     by setting this parameter to a false value, otherwise it must be an
     array;
+
+- `leaf`
+
+    This is an alternative, hopefully more readable, way to set the command
+    as a _leaf_ and avoid considering any sub-command, including the
+    auto-generated ones.
 
 - `allow-residual-options`
 
