@@ -422,9 +422,10 @@ sub stock_Default ($self, $spec, @ignore) {
       ($spec->{options} // [])->@*
    };
 }
+
 sub stock_Environment ($self, $spec, @ignore) {
    return {
-      map { $_->{name} => $ENV{$_->{environment}} }
+      map { name_for_option($_) => $ENV{$_->{environment}} }
       grep {
          exists($_->{environment}) && exists($ENV{$_->{environment}})
       }
