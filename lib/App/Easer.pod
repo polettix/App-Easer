@@ -160,8 +160,9 @@ application managed by C<App::Easer>:
       merge:    «executable»
       validate: «executable»
       sources:  «array»
-      'auto-children': «false or array»
+      'auto-children':  «false or array»
       'help-on-stderr': «boolean»
+      'auto-leaves':    «boolean»
    commands:
       cmd-1:
          «command definition»
@@ -272,6 +273,7 @@ the normal working of C<App::Easer>.
       sources:  «array»
       'auto-children': «false or array»
       'help-on-stderr': «boolean»
+      'auto-leaves':    «boolean»
 
 One of the central services provided by C<App::Easer> is the automatic
 gathering of options values from several sources (command line,
@@ -313,9 +315,13 @@ the specific setup for each command. As such, they will be rarely set at
 the higher C<configuration> level and the whole C<configuration> section
 can normally be left out of an application's definition.
 
-Last, option C<help-on-stderr> allows printing the two stock helper
+Option C<help-on-stderr> allows printing the two stock helper
 commands C<help> and C<commands> on standard error instead of standard
 output (which is the default).
+
+Option C<auto-leaves> allows setting any command that has no I<explicit>
+sub-command as a leaf, which prevents it from getting a C<help> and a
+C<commands> sub-command (or whatever has been put to override them).
 
 =head2 Commands Specifications
 
@@ -337,6 +343,7 @@ The command definition is a hash with the following shape:
        default: gargle
    execute: «executable»
    children: ['foo.bar', 'baz']
+   leaf: 0
    allow-residual-options: 0
    collect:  «executable»
    merge: «merge»
@@ -387,6 +394,12 @@ automatic children have been changed or disabled. It is possible to mark
 a command as a I<leaf> (missing also sub-commands C<help>/C<commands>)
 by setting this parameter to a false value, otherwise it must be an
 array;
+
+=item C<leaf>
+
+This is an alternative, hopefully more readable, way to set the command
+as a I<leaf> and avoid considering any sub-command, including the
+auto-generated ones.
 
 =item C<allow-residual-options>
 
