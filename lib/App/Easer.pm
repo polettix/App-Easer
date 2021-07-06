@@ -410,6 +410,10 @@ sub run ($application, $args) {
    my $self = {
       application => $application,
       factory     => generate_factory($application->{factory} // {}),
+      helpers     => {
+         'print-commands' => \&print_commands,
+         'print-help'     => \&print_help,
+      },
       trail       => [['MAIN', $application->{commands}{MAIN}{name}]],
       configs     => []
    };
