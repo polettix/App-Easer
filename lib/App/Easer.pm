@@ -222,7 +222,11 @@ sub get_child ($self, $spec, $name) {
 }
 
 sub get_children ($self, $spec) {
+   return if $spec->{leaf};
    return if exists($spec->{children}) && ! $spec->{children};
+   my @children = ($spec->{children} // [])->@*;
+   return if $self->{application}{configuration}{'auto-leaves'}
+      && @children == 0; # no auto-children for leaves under auto-leaves
    my @auto = exists $self->{application}{configuration}{'auto-children'}
       ? (($self->{application}{configuration}{'auto-children'} // [])->@*)
       : (qw< help commands >);
@@ -238,7 +242,7 @@ sub get_children ($self, $spec) {
          die "invalid no-auto, array or '*' are allowed\n";
       }
    }
-   return (($spec->{children} // [])->@*, @auto);
+   return (@children, @auto);
 }
 
 sub get_descendant ($self, $start, $list) {
