@@ -400,6 +400,9 @@ sub print_help ($self, $target) {
       print {$fh} "Sub commands:\n", list_commands($self, \@children),
         "\n";
    }
+   else {
+      print {$fh} "no sub-commands\n\n";
+   }
 }
 
 sub run ($application, $args) {
