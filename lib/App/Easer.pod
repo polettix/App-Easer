@@ -125,6 +125,12 @@ Call examples:
 
 =head1 DESCRIPTION
 
+B<NOTE>: this software should be considered "late alpha" maturity. I'm
+mostly happy with the interface, but there are still a few things that
+might get changed. I<Anyway>, if you find a release of C<App::Easer> to
+work fine for you, it's fair to assume that you will not need to get a
+newer one later.
+
 App::Easer provides the scaffolding for implementing hierarchical
 command-line applications in a very fast way.
 
