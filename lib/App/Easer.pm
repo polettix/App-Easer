@@ -131,19 +131,19 @@ sub commandline_help ($getopt) {
    my @alternatives = split /\|/, $getopt;
    if ($type eq 'bool') {
       push @retval, map {
-         if (length($_) eq 1) { "-$_" }
+         if (length($_) == 1) { "-$_" }
          else { "--$_ | --no-$_" }
       } @alternatives;
    }
    elsif ($mode eq 'optional') {
       push @retval, map {
-         if (length($_) eq 1) { "-$_ [<value>]" }
+         if (length($_) == 1) { "-$_ [<value>]" }
          else { "--$_ [<value>]" }
       } @alternatives;
    }
    else {
       push @retval, map {
-         if (length($_) eq 1) { "-$_ <value>" }
+         if (length($_) == 1) { "-$_ <value>" }
          else { "--$_ <value>" }
       } @alternatives;
    }
