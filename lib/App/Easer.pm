@@ -427,6 +427,12 @@ sub run ($application, $args) {
    return execute($self, $args) // 0;
 } ## end sub run
 
+sub slurp ($file, $mode = '<:encoding(UTF-8)') {
+   open my $fh, $mode, $file or die "open('$file'): $!\n";
+   local $/;
+   return <$fh>;
+}
+
 sub sources ($self, $spec, $args) {
    my $s = $spec->{sources}
      // $self->{application}{configuration}{sources}
@@ -463,12 +469,6 @@ sub stock_CmdLine ($self, $spec, $args) {
 
    return (\%option_for, \@args);
 } ## end sub stock_CmdLine
-
-sub slurp ($file, $mode = '<:encoding(UTF-8)') {
-   open my $fh, $mode, $file or die "open('$file'): $!\n";
-   local $/;
-   return <$fh>;
-}
 
 sub stock_JsonFileFromConfig ($self, $spec, $args) {
    my $key = $spec->{'config-option'} // 'config';
