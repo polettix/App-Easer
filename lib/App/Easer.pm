@@ -214,7 +214,8 @@ sub generate_factory ($c) {
 sub get_child ($self, $spec, $name) {
    for my $child (get_children($self, $spec)) {
       my $command = $self->{application}{commands}{$child};
-      next unless grep { $_ eq $name } $command->{supports}->@*;
+      next unless grep { $_ eq $name }
+         ($command->{supports} //= [$child])->@*;
       return $child;
    }
    return;
@@ -266,7 +267,7 @@ sub list_commands ($self, $children) {
    for my $child ($children->@*) {
       my $command = $self->{application}{commands}{$child};
       my $help = $command->{help};
-      my @aliases = ($command->{supports} // [])->@*;
+      my @aliases = ($command->{supports} // [$child])->@*;
       next unless @aliases;
       printf {$fh} "%15s: %s\n", shift(@aliases), $help;
       printf {$fh} "%15s  (also as: %s)\n", '', join ', ', @aliases
