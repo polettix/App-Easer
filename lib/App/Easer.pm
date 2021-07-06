@@ -503,9 +503,7 @@ sub stock_factory ($executable, $default_subname = '', $opts = {}) {
    return sub { $executable->($args, @_) };
 } ## end sub stock_factory
 
-sub stock_help ($self, $config, $args) {
-   my $target = get_descendant($self, $self->{trail}[-2][0], $args);
-   my $command = $self->{application}{commands}{$target};
+sub print_help ($self, $command) {
    my $fh =
      $self->{application}{configuration}{'help-on-stderr'}
      ? \*STDERR
@@ -552,6 +550,11 @@ sub stock_help ($self, $config, $args) {
       print {$fh} "Sub commands:\n", list_commands($self, \@children),
         "\n";
    }
+}
+
+sub stock_help ($self, $config, $args) {
+   my $target = get_descendant($self, $self->{trail}[-2][0], $args);
+   print_help($self, $self->{application}{commands}{$target});
    return 0;
 } ## end sub stock_help
 
