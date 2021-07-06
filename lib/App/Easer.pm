@@ -409,13 +409,13 @@ sub run ($application, $args) {
    $application = add_auto_commands(load_application($application));
    my $self = {
       application => $application,
+      configs     => [],
       factory     => generate_factory($application->{factory} // {}),
       helpers     => {
          'print-commands' => \&print_commands,
          'print-help'     => \&print_help,
       },
       trail       => [['MAIN', $application->{commands}{MAIN}{name}]],
-      configs     => []
    };
 
    while ('necessary') {
