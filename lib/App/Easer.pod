@@ -541,7 +541,7 @@ provided as a reference to an array.
 
 =head2 execute
 
-=head2 factory
+=head2 stock_factory
 
    # just the sub
    $subref = factory(sub {});
@@ -644,9 +644,15 @@ is thrown (C<no '$subname' in '$package'>);
 
 =head2 load_application
 
+=head2 merger
+
 =head2 name_for_option
 
 =head2 params_validate
+
+=head2 slurp
+
+=head2 sources
 
 =head2 stock_CmdLine
 
@@ -654,7 +660,15 @@ is thrown (C<no '$subname' in '$package'>);
 
 =head2 stock_Environment
 
+=head2 stock_JsonFileFromConfig
+
+=head2 stock_JsonFiles
+
+=head2 stock_SourcesWithFiles
+
 =head2 stock_Parent
+
+=head2 stock_sources
 
 =head2 stock_commands
 
