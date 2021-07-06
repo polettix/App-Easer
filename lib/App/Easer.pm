@@ -338,7 +338,22 @@ sub params_validate ($self, $spec, $args) {
    Params::Validate::validate($self->{configs}[-1]->%*, $validator);
 } ## end sub params_validate
 
-sub print_help ($self, $command) {
+sub print_commands ($self, $target) {
+   my $command = $self->{application}{commands}{$target};
+   my $fh =
+     $self->{application}{configuration}{'help-on-stderr'}
+     ? \*STDERR
+     : \*STDOUT;
+   if (my @children = get_children($self, $command)) {
+      print {$fh} list_commands($self, \@children);
+   }
+   else {
+      print {$fh} "no sub-commands\n";
+   }
+}
+
+sub print_help ($self, $target) {
+   my $command =  $self->{application}{commands}{$target};
    my $fh =
      $self->{application}{configuration}{'help-on-stderr'}
      ? \*STDERR
@@ -494,17 +509,7 @@ sub stock_Parent ($self, $spec, @ignore) { $self->{configs}[-1] // {} }
 sub stock_commands ($self, $config, $args) {
    die "this command does not support arguments\n" if $args->@*;
    my $target = get_descendant($self, $self->{trail}[-2][0], $args);
-   my $fh =
-     $self->{application}{configuration}{'help-on-stderr'}
-     ? \*STDERR
-     : \*STDOUT;
-   my $command = $self->{application}{commands}{$target};
-   if (my @children = get_children($self, $command)) {
-      print {$fh} list_commands($self, \@children);
-   }
-   else {
-      print {$fh} "no sub-commands\n";
-   }
+   print_commands($self, $target);
    return 0;
 } ## end sub stock_commands
 
@@ -553,8 +558,7 @@ sub stock_factory ($executable, $default_subname = '', $opts = {}) {
 } ## end sub stock_factory
 
 sub stock_help ($self, $config, $args) {
-   my $target = get_descendant($self, $self->{trail}[-2][0], $args);
-   print_help($self, $self->{application}{commands}{$target});
+   print_help($self, get_descendant($self, $self->{trail}[-2][0], $args));
    return 0;
 } ## end sub stock_help
 
