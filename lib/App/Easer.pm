@@ -525,6 +525,13 @@ sub stock_help ($self, $config, $args) {
    return 0;
 }
 
+sub stock_DefaultSources { [qw< +CmdLine +Environment +Parent +Default >] };
+
+sub stock_SourcesWithFiles {
+   [qw< +CmdLine +Environment +Parent +JsonFileFromConfig +JsonFiles
+      +Default >]
+};
+
 sub validate_configuration ($self, $spec, $args) {
    my $from_spec = $spec->{validate};
    my $from_self = $self->{application}{configuration}{validate};
