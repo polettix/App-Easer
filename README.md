@@ -138,10 +138,6 @@ for generating a help message, taking parameters from the command line
 or other sources (e.g. environment variables), sub-commands, etc., as
 well as the actual code to run when the command must be run.
 
-[App::Easer::Tutorial](https://metacpan.org/pod/App::Easer::Tutorial) contains an example-based introduction; the rest
-of this document provides details on the available interface and
-customization capabilities.
-
 ## Application High Level View
 
 The following YAML representation gives a view of the structure of an
