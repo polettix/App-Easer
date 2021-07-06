@@ -36,9 +36,7 @@ sub collect ($self, $spec, $args) {
    my $config = {};
    my @residual_args;
 
-   my $merger = $spec->{merge}
-     // $self->{application}{configuration}{merge} // \&hash_merge;
-   $merger = $self->{factory}->($merger, 'merge');    # "resolve"
+   my $merger = merger($self, $spec);
 
    my $sources = $spec->{sources}
      // $self->{application}{configuration}{sources}
@@ -339,6 +337,12 @@ sub load_application ($application) {
       eval $text;
    } // die "cannot load application\n";
 } ## end sub load_application ($application)
+
+sub merger ($self, $spec = {}) {
+   my $merger = $spec->{merge}
+     // $self->{application}{configuration}{merge} // \&hash_merge;
+   return $self->{factory}->($merger, 'merge');    # "resolve"
+}
 
 sub name_for_option ($o) {
    return $o->{name} if defined $o->{name};
