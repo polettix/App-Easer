@@ -392,6 +392,29 @@ sub stock_CmdLine ($self, $spec, $args) {
    return (\%option_for, \@args);
 }
 
+sub slurp ($file, $mode = '<:encoding(UTF-8)') {
+   open my $fh, $mode, $file or die "open('$file'): $!\n";
+   local $/;
+   return <$fh>;
+}
+
+sub stock_JsonFileFromConfig ($self, $spec, $args) {
+   my $key = $spec->{'config-option'} // 'config';
+   return {} if ! exists($spec->{config}{$key});
+   require JSON::PP;
+   return JSON::PP::decode_json(slurp($spec->{config}{$key}));
+}
+
+sub stock_JsonFiles ($self, $spec, @ignore) {
+   return merger($self, $spec)->(
+      map {
+         require JSON::PP;
+         JSON::PP::decode_json(slurp($_));
+      }
+      grep { -e $_ } ($spec->{'config-files'} // [])->@*
+   );
+}
+
 sub stock_Default ($self, $spec, @ignore) {
    return {
       map { name_for_option($_) => $_->{default} }
