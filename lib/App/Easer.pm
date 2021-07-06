@@ -365,7 +365,7 @@ sub sources ($self, $spec, $args) {
 sub stock_CmdLine ($self, $spec, $args) {
    my @args = $args->@*;
    my $goc = $spec->{getopt_config}
-      // default_getopt_config(scalar(($spec->{children} // [])->@*));
+      // default_getopt_config(scalar(get_children($self, $spec)));
    require Getopt::Long;
    Getopt::Long::Configure('default', $goc->@*);
 
