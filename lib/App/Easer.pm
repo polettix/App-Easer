@@ -338,6 +338,55 @@ sub params_validate ($self, $spec, $args) {
    Params::Validate::validate($self->{configs}[-1]->%*, $validator);
 } ## end sub params_validate
 
+sub print_help ($self, $command) {
+   my $fh =
+     $self->{application}{configuration}{'help-on-stderr'}
+     ? \*STDERR
+     : \*STDOUT;
+
+   print {$fh} $command->{help}, "\n\n";
+
+   if (defined(my $description = $command->{description})) {
+      $description =~ s{\A\s+|\s+\z}{}gmxs;    # trim
+      $description =~ s{^}{    }gmxs;          # add some indentation
+      print {$fh} "Description:\n$description\n\n";
+   }
+
+   printf {$fh} "Can be called as: %s\n\n", join ', ',
+     $command->{supports}->@*
+     if $command->{supports};
+
+   my $options = $command->{options} // [];
+   if ($options->@*) {
+      print {$fh} "Options:\n";
+      for my $option ($options->@*) {
+         printf {$fh} "%15s: %s\n", name_for_option($option),
+           $option->{help} // '';
+
+         if (exists $option->{getopt}) {
+            my @lines = commandline_help($option->{getopt});
+            printf {$fh} "%15s  command-line: %s\n", '', shift(@lines);
+            printf {$fh} "%15s                %s\n", '', $_ for @lines;
+         }
+         printf {$fh} "%15s  environment : %s\n", '',
+           $option->{environment} // '*undef*'
+           if exists $option->{environment};
+         printf {$fh} "%15s  default     : %s\n", '',
+           $option->{default} // '*undef*'
+           if exists $option->{default};
+      } ## end for my $option ($options...)
+      print {$fh} "\n";
+   } ## end if ($options->@*)
+   else {
+      print {$fh} "This command has no options.\n\n";
+   }
+
+   if (my @children = get_children($self, $command)) {
+      print {$fh} "Sub commands:\n", list_commands($self, \@children),
+        "\n";
+   }
+}
+
 sub run ($application, $args) {
    $application = add_auto_commands(load_application($application));
    my $self = {
@@ -502,55 +551,6 @@ sub stock_factory ($executable, $default_subname = '', $opts = {}) {
    return $executable unless $args;
    return sub { $executable->($args, @_) };
 } ## end sub stock_factory
-
-sub print_help ($self, $command) {
-   my $fh =
-     $self->{application}{configuration}{'help-on-stderr'}
-     ? \*STDERR
-     : \*STDOUT;
-
-   print {$fh} $command->{help}, "\n\n";
-
-   if (defined(my $description = $command->{description})) {
-      $description =~ s{\A\s+|\s+\z}{}gmxs;    # trim
-      $description =~ s{^}{    }gmxs;          # add some indentation
-      print {$fh} "Description:\n$description\n\n";
-   }
-
-   printf {$fh} "Can be called as: %s\n\n", join ', ',
-     $command->{supports}->@*
-     if $command->{supports};
-
-   my $options = $command->{options} // [];
-   if ($options->@*) {
-      print {$fh} "Options:\n";
-      for my $option ($options->@*) {
-         printf {$fh} "%15s: %s\n", name_for_option($option),
-           $option->{help} // '';
-
-         if (exists $option->{getopt}) {
-            my @lines = commandline_help($option->{getopt});
-            printf {$fh} "%15s  command-line: %s\n", '', shift(@lines);
-            printf {$fh} "%15s                %s\n", '', $_ for @lines;
-         }
-         printf {$fh} "%15s  environment : %s\n", '',
-           $option->{environment} // '*undef*'
-           if exists $option->{environment};
-         printf {$fh} "%15s  default     : %s\n", '',
-           $option->{default} // '*undef*'
-           if exists $option->{default};
-      } ## end for my $option ($options...)
-      print {$fh} "\n";
-   } ## end if ($options->@*)
-   else {
-      print {$fh} "This command has no options.\n\n";
-   }
-
-   if (my @children = get_children($self, $command)) {
-      print {$fh} "Sub commands:\n", list_commands($self, \@children),
-        "\n";
-   }
-}
 
 sub stock_help ($self, $config, $args) {
    my $target = get_descendant($self, $self->{trail}[-2][0], $args);
