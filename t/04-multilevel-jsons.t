@@ -14,7 +14,7 @@ my $app = {
       MAIN => {
          help        => 'example command',
          description => 'An example command',
-         sources => '+SourcesWithFiles',
+         sources     => '+SourcesWithFiles',
          options     => [
             {
                getopt      => 'foo|f!',
@@ -73,38 +73,49 @@ my $app = {
 
 subtest 'foo baz' => sub {
    test_run($app, [qw< --foo foo --hey you baz --last 12 FP >], {}, 'baz')
-     ->no_exceptions
-     ->result_is('BAZ')
+     ->no_exceptions->result_is('BAZ')
      ->conf_is({foo => 1, bar => 'buzz', hey => 'you', last => 12})
-     ->args_are(['FP'])
-     ->stdout_like(qr{baz on out})
+     ->args_are(['FP'])->stdout_like(qr{baz on out})
      ->stderr_like(qr{baz on err});
 };
 
 subtest 'foo baz, with config file' => sub {
-   test_run($app, [qw< --foo --config >, tpath('example.json'),
-         qw< foo --hey you baz --last 12 FP >], {}, 'baz')
-     ->no_exceptions
-     ->result_is('BAZ')
-     ->conf_is({foo => 1, bar => 'buzz', hey => 'you', last => 12,
-           what => 'ever', config => tpath('example.json')})
-     ->args_are(['FP'])
-     ->stdout_like(qr{baz on out})
+   test_run(
+      $app,
+      [
+         qw< --foo --config >,
+         tpath('example.json'),
+         qw< foo --hey you baz --last 12 FP >
+      ],
+      {},
+      'baz'
+   )->no_exceptions->result_is('BAZ')->conf_is(
+      {
+         foo    => 1,
+         bar    => 'buzz',
+         hey    => 'you',
+         last   => 12,
+         what   => 'ever',
+         config => tpath('example.json')
+      }
+   )->args_are(['FP'])->stdout_like(qr{baz on out})
      ->stderr_like(qr{baz on err});
 };
 
-$app->{commands}{MAIN}{'config-files'} = [
-   qw< /etcxn/not/existent >, tpath('example.json')
-];
+$app->{commands}{MAIN}{'config-files'} =
+  [qw< /etcxn/not/existent >, tpath('example.json')];
 
 subtest 'foo baz, with config file' => sub {
    test_run($app, [qw< --foo foo --hey you baz --last 12 FP >], {}, 'baz')
-     ->no_exceptions
-     ->result_is('BAZ')
-     ->conf_is({foo => 1, bar => 'buzz', hey => 'you', last => 12,
-           what => 'ever', })
-     ->args_are(['FP'])
-     ->stdout_like(qr{baz on out})
+     ->no_exceptions->result_is('BAZ')->conf_is(
+      {
+         foo  => 1,
+         bar  => 'buzz',
+         hey  => 'you',
+         last => 12,
+         what => 'ever',
+      }
+   )->args_are(['FP'])->stdout_like(qr{baz on out})
      ->stderr_like(qr{baz on err});
 };
 

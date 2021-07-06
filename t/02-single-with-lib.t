@@ -44,9 +44,7 @@ subtest 'env + cmdline, both parameters' => sub {
      ->stderr_like(qr{(?mxs:\A gaaaah! \z)});
 };
 
-test_run($app, ['help'], {}, 'MAIN')
-   ->no_exceptions
-   ->stdout_like(
+test_run($app, ['help'], {}, 'MAIN')->no_exceptions->stdout_like(
    qr{(?mxs:
       example \s+ command .*?
       An \s+ example \s+ command .*?
@@ -57,17 +55,15 @@ test_run($app, ['help'], {}, 'MAIN')
    )}, 'output of help command'
 );
 
-test_run($app, ['commands'], {}, 'MAIN')
-   ->no_exceptions
-   ->stdout_like(
+test_run($app, ['commands'], {}, 'MAIN')->no_exceptions->stdout_like(
    qr{(?mxs:
       help .*?
       commands .*?
    )}, 'output of commands command'
 );
 
-test_run($app, ['inexistent'], {}, 'MAIN')
-   ->exception_like(qr{(?mxs:
+test_run($app, ['inexistent'], {}, 'MAIN')->exception_like(
+   qr{(?mxs:
       cannot .*? inexistent
    )}, 'inexistent command generates complaint'
 );

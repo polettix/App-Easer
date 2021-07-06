@@ -20,8 +20,8 @@ use App::Easer;
 my $factory = App::Easer::generate_factory(
    {
       prefixes => {
-         '/' => 'This#',
-         '-' => 'That#',
+         '/'  => 'This#',
+         '-'  => 'That#',
          '~~' => 'Other#the',
       }
    }
@@ -33,23 +33,25 @@ isa_ok $factory, 'CODE';
 
 is $factory->('/thefunc', 'x')->(), 'This', 'resolution to This';
 is $factory->('-thefunc', 'x')->(), 'That', 'resolution to That';
-is $factory->('~~func', 'x')->(), 'Other', 'resolution to Other (external module)';
+is $factory->('~~func',   'x')->(), 'Other',
+  'resolution to Other (external module)';
 is $factory->('main#thefunc', 'x')->(), 'main', 'resolution to main';
-is $factory->('main', 'thefunc')->(), 'main', 'resolution to main (via default sub name)';
-is $factory->(sub {'a sub!'}, 'x')->(), 'a sub!', 'a sub reference';
-is $factory->('= sub { "inline" }', '')->(), 'inline', 'some inline Perl code';
-is $factory->({executable => sub { return $_[0]{message}}, message => 'hashref'}, '')->(), 'hashref', 'hash reference as executable';
+is $factory->('main', 'thefunc')->(), 'main',
+  'resolution to main (via default sub name)';
+is $factory->(sub { 'a sub!' }, 'x')->(), 'a sub!', 'a sub reference';
+is $factory->('= sub { "inline" }', '')->(), 'inline',
+  'some inline Perl code';
+is $factory->(
+   {executable => sub { return $_[0]{message} }, message => 'hashref'}, ''
+)->(), 'hashref', 'hash reference as executable';
 
 my $sub1 = $factory->('+help', '');
 my $sub2 = \&App::Easer::stock_help;
 is "$sub1", "$sub2", 'prefix + to get stock functions';
 
-for my $error (
-   ['This', 'whatever'],
-   ['Inexistent#function', '']
-) {
+for my $error (['This', 'whatever'], ['Inexistent#function', '']) {
    throws_ok { $factory->($error->@*) } qr{locate},
-      'exception sent as expected';
+     'exception sent as expected';
 }
 
 done_testing();

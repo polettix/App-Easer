@@ -14,9 +14,9 @@ my $target = {what => 'ever'};
 is_deeply $loader->({what => 'ever'}), $target, 'hash';
 
 is_deeply $loader->(\'my $x = {what => "ever"}'), $target, 'Perl code';
-is_deeply $loader->(\'{"what": "ever"}'), $target, 'JSON string';
+is_deeply $loader->(\'{"what": "ever"}'),         $target, 'JSON string';
 
-is_deeply $loader->(tpath('example.pl')), $target, 'Perl file';
+is_deeply $loader->(tpath('example.pl')),   $target, 'Perl file';
 is_deeply $loader->(tpath('example.json')), $target, 'JSON file';
 
 is_deeply $loader->(\*DATA), $target, 'filehandle';
