@@ -374,7 +374,10 @@ sub print_help ($self, $target) {
    my $options = $command->{options} // [];
    if ($options->@*) {
       print {$fh} "Options:\n";
+      my $n = 0; # count the option
       for my $option ($options->@*) {
+         print {$fh} "\n" if $n++;
+
          printf {$fh} "%15s: %s\n", name_for_option($option),
            $option->{help} // '';
 
