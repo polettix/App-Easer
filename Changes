@@ -1,4 +1,6 @@
 {{$NEXT}}
+
+0.002  2021-07-07 12:27:31 CEST
    - Added relevant Test:: modules
    - Adjusted output of help sub-command
    - Added example eg/tudu (plain sub-commands)
