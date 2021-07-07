@@ -34,8 +34,6 @@
             "Dist::Milla" : "v1.0.20",
             "Path::Tiny" : "0.084",
             "Template::Perlish" : "1.52",
-            "Test::Exception" : "0.43",
-            "Test::Output" : "1.033",
             "Test::Pod" : "1.51",
             "Test::Pod::Coverage" : "1.04"
          }
@@ -47,7 +45,9 @@
       },
       "test" : {
          "requires" : {
-            "Path::Tiny" : "0.084"
+            "Path::Tiny" : "0.084",
+            "Test::Exception" : "0.43",
+            "Test::Output" : "1.033"
          }
       }
    },
