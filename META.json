@@ -51,6 +51,12 @@
          }
       }
    },
+   "provides" : {
+      "App::Easer" : {
+         "file" : "lib/App/Easer.pm",
+         "version" : "0.002"
+      }
+   },
    "release_status" : "stable",
    "resources" : {
       "bugtracker" : {
