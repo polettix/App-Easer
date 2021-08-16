@@ -664,6 +664,8 @@ is thrown (C<no '$subname' in '$package'>);
 
 =head2 get_descendant
 
+=head2 has_children
+
 =head2 hash_merge
 
 =head2 list_commands
