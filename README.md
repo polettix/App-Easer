@@ -413,6 +413,9 @@ The following keys are supported:
     overridden. Setting this to a false value disables looking for a
     sub-command, so it allows addressing the command itself directly.
 
+    This must be the key associated to a child in the `commands` mapping,
+    i.e. the same name that is put in the `children` array.
+
 - `no-auto`
 
     This option disables the automatic addition of automatically generated

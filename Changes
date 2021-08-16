@@ -1,4 +1,6 @@
 {{$NEXT}}
+   - Fix additional metadata for distribution
+   - Make hierarchy work on keys in hash "commands"
 
 0.002  2021-07-07 12:27:31 CEST
    - Added relevant Test:: modules
