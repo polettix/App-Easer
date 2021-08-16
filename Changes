@@ -1,4 +1,6 @@
 {{$NEXT}}
+
+0.003  2021-08-16 06:44:48 CEST
    - Fix additional metadata for distribution
    - Make hierarchy work on keys in hash "commands"
 
