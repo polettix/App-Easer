@@ -140,10 +140,10 @@ DISTRIBUTIONS
       perl 5.006
       strict 0
       warnings 0
-  Template-Perlish-1.54
-    pathname: P/PO/POLETTIX/Template-Perlish-1.54.tar.gz
+  Template-Perlish-1.56
+    pathname: P/PO/POLETTIX/Template-Perlish-1.56.tar.gz
     provides:
-      Template::Perlish 1.54
+      Template::Perlish 1.56
     requirements:
       Module::Build::Tiny 0.034
       perl 5.008000

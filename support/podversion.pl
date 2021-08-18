@@ -11,6 +11,7 @@ my $podfile = path($distro)->child('lib', @parts);
 my $readme = path($distro)->child('README');
 
 my $tp = Template::Perlish->new(
+   binmode   => ':raw',
    start     => '{{[',
    stop      => ']}}',
    variables => {
