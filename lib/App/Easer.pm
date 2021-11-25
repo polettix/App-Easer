@@ -183,32 +183,56 @@ sub execute ($self, $args) {
    return $executable->($self, $config, $args);
 } ## end sub execute
 
+sub fetch_subcommand_default ($self, $spec) {
+   my $acfg = $self->{application}{configuration};
+   my $child = exists($spec->{'default-child'}) ? $spec->{'default-child'}
+      : exists($acfg->{'default-child'}) ? $acfg->{'default-child'}
+      : get_child($self, $spec, 'help'); # help is last resort
+   return ($child, $child) if defined $child && length $child;
+   return;
+}
+
 sub fetch_subcommand ($self, $spec, $args) {
+   # if there's a dispatch, use that to figure out where to go next
+   # **this** might even overcome having children at all!
+   for my $cfg ($spec, $self->{application}{configuration}) {
+      next unless exists $cfg->{dispatch};
+      my $sub = $self->{factory}->($cfg->{dispatch}, 'dispatch');
+      defined(my $child = $sub->($self, $spec, $args)) or return;
+      return ($child, $child);
+   }
+
+   # regular course here, no point in going forth without children
    return unless has_children($self, $spec);
-   my ($child, $candidate, $candidate_from_args);
-   if ($args->@*) {
-      $candidate           = $args->[0];
-      $candidate_from_args = 1;
+
+   # use defaults if there's no argument to investigate
+   return fetch_subcommand_default($self, $spec) unless $args->@*;
+
+   # try to get a child from the first argument
+   if (my $child = get_child($self, $spec, $args->[0])) {
+      return ($child, shift $args->@*); # consumed arg name
    }
-   elsif (exists $spec->{'default-child'}) {
-      $candidate = $child = $spec->{'default-child'};
-      return unless defined $child && length $child;
+
+   # the first argument didn't help, but we might want to fallback
+   for my $cfg ($spec, $self->{application}{configuration}) {
+      if (exists $cfg->{fallback}) { # executable
+         defined(my $fb = $cfg->{fallback}) or return;
+         my $sub = $self->{factory}->($fb, 'fallback'); # "resolve"
+         defined(my $child = $sub->($self, $spec, $args)) or return;
+         return ($child, $child);
+      }
+      if (exists $spec->{'fallback-to'}) {
+         defined(my $fbto = $spec->{'fallback-to'}) or return;
+         return ($fbto, $fbto);
+      }
+      return fetch_subcommand_default($self, $spec)
+         if $cfg->{'fallback-to-default'};
    }
-   elsif (exists $self->{application}{configuration}{'default-child'}) {
-      $candidate = $child
-         = $self->{application}{configuration}{'default-child'};
-      return unless defined $child && length $child;
-   }
-   else {
-      $candidate = 'help';
-   }
-   if ($child //= get_child($self, $spec, $candidate)) {
-      shift $args->@* if $candidate_from_args;
-      return ($child, $candidate // $child);
-   }
+
+   # no fallback at this point... it's an error, build a message and die!
    my @names = map { $_->[1] } $self->{trail}->@*;
    shift @names;    # remove first one
-   my $path = join '/', @names, $candidate;
+   my $path = join '/', @names, $args->[0]; # $args->[0] was the candidate
    die "cannot find sub-command '$path'\n";
 } ## end sub fetch_subcommand
 
