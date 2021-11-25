@@ -42,7 +42,7 @@ This document describes App::Easer version {{\[ version \]}}.
              options => [
                 {
                    name => 'foo',
-                   description => 'option foo!',
+                   help => 'option foo!',
                    getopt => 'foo|f=s',
                    environment => 'FOO',
                    default => 'bar',
@@ -63,21 +63,21 @@ Call examples:
 
     $ ./example.pl
     Hello, bar!
-    
+
     $ ./example.pl --foo World
     Hello, World!
-    
+
     $ ./example.pl commands
     $ perl lib/App/Easer.pm commands
                help: print a help message
            commands: list sub-commands
-    
+
     $ ./example.pl help
     this is the main app
-    
+
     Description:
         Yes, this really is the main app
-    
+
     Options:
                 foo: 
                      command-line: mandatory string option
@@ -85,30 +85,30 @@ Call examples:
                                    -f <value>
                      environment : FOO
                      default     : bar
-    
+
     Sub commands:
                help: print a help message
            commands: list sub-commands
-    
+
     $ ./example.pl help help
     print a help message
-    
+
     Description:
         print help for (sub)command
-    
+
     This command has no options.
-    
+
     $ ./example.pl help commands
     list sub-commands
-    
+
     Description:
         Print list of supported sub-commands
-    
+
     This command has no options.
-    
+
     $ ./example.pl inexistent
     cannot find sub-command 'inexistent'
-    
+
     $ ./example.pl help inexistent
     cannot find sub-command 'inexistent'
 
@@ -305,6 +305,7 @@ The command definition is a hash with the following shape:
         getopt: 'whip|w=s'
         environment: FOO_WHIP
         default: gargle
+        help: 'beware of the whip'
     execute: «executable»
     children: ['foo.bar', 'baz']
     leaf: 0
