@@ -295,12 +295,24 @@ ease navigating in the hierarchy and get information on the
 The configuration is collected by a function provided by C<App::Easer>
 that can be optionally overridden by setting a different executable for
 C<collect> under C<configuration>. This of course requires
-re-implementing the options value gathering from scratch.
+re-implementing the options value gathering from scratch. Calling
+convention:
+
+   sub ($app, $spec, $args)
+   # $app:  hash ref with the details on the whole applications
+   # $spec: hash ref with the specification of the command
+   # $args: array ref with residual (command line) arguments
+
+This function is expected to return a list with two items, the first a
+hash reference with the collected configuration options, the second an
+array reference with the residual arguments.
 
 The C<merge> executable allows setting a function that merges several
 hashes together. The default implementation operates at the higher level
 of the hashes only, giving priority to the first hashes provided (in
-order).
+order).  Calling convention:
+
+   sub (@list_of_hashes_to_merge) # returns a hash reference
 
 The C<validate> executable allows setting a validator. By default the
 validation is performed using L<Params::Validate> (if available, it is
@@ -346,23 +358,30 @@ The command definition is a hash with the following shape:
    help: foo the bar
    description: foo allows us to foo the bar
    supports: ['foo', 'Foo']
+
    options:
      - name: whip
        getopt: 'whip|w=s'
        environment: FOO_WHIP
        default: gargle
        help: 'beware of the whip'
-   execute: «executable»
-   children: ['foo.bar', 'baz']
-   leaf: 0
    allow-residual-options: 0
-   collect:  «executable»
-   merge: «merge»
-   validate: ... «executable» or data structure...
    sources: ['+CmdLine', '+Environment', '+Parent', '+Default']
+
+   collect:  «executable»
+   merge:    «executable»
+   validate: ... «executable» or data structure...
+   commit:   «executable»
+   execute:  «executable»
+
+   children: ['foo.bar', 'baz']
    default-child: 'foo.bar'
+   dispatch: «executable»
+   fallback: «executable»
+   fallback-to: 'baz'
+   fallback-to-default: 1
+   leaf: 0
    no-auto: 1
-   commit: «executable»
 
 The following keys are supported:
 
@@ -391,27 +410,6 @@ used. The C<name> sub-field is used in the automatic help generation;
 other sub-options are self-explanatory (C<getopt>, C<environment>, and
 C<default>).
 
-=item C<execute>
-
-This is the callback that is called when the command is selected for
-execution.
-
-=item C<children>
-
-This is a list of children, i.e. allowed sub-commands, specified by
-their identifier in the C<commands> hash. This list is normally enriched
-with sub-commands C<help> and C<commands> automatically, unless the
-automatic children have been changed or disabled. It is possible to mark
-a command as a I<leaf> (missing also sub-commands C<help>/C<commands>)
-by setting this parameter to a false value, otherwise it must be an
-array;
-
-=item C<leaf>
-
-This is an alternative, hopefully more readable, way to set the command
-as a I<leaf> and avoid considering any sub-command, including the
-auto-generated ones.
-
 =item C<allow-residual-options>
 
 This boolean indicates whether additional options in the command are
@@ -424,6 +422,19 @@ not be tried as a sub-command.
 Reasons to disable this (by setting this option to true) might be if a
 leaf command will then use the rest of the argument list to e.g. call an
 external program.
+
+=item C<sources>
+
+This is the list of sources to gather values for options. It defaults to
+whatever has been set in the top-level C<configuration> of the
+application, or C<+CmdLine +Environment +Parent +Default> by default.
+
+It might be helpful to override this setting in the C<MAIN> entry point
+command, e.g. to add the loading of a configuration file once and for
+all.
+
+Items are executables, i.e. sub references or names that will be
+I<resolved> into sub references through the I<factory>.
 
 =item C<collect>
 
@@ -445,18 +456,37 @@ needed, but it allows a "former" command to perform actions before the
 search mechanism investigates further down looking for the target
 command.
 
-=item C<sources>
+Calling convention:
 
-This is the list of sources to gather values for options. It defaults to
-whatever has been set in the top-level C<configuration> of the
-application, or C<+CmdLine +Environment +Parent +Default> by default.
+   sub ($app, $spec, $args)
+   # $app:  hash ref with the details on the whole applications
+   # $spec: hash ref with the specification of the command
+   # $args: array ref with residual (command line) arguments
 
-It might be helpful to override this setting in the C<MAIN> entry point
-command, e.g. to add the loading of a configuration file once and for
-all.
+The configuration that has been assembled up to the specific command can
+be retrieved at C<< $app->{configs}[-1] >>.
 
-Items are executables, i.e. sub references or names that will be
-I<resolved> into sub references through the I<factory>.
+=item C<execute>
+
+This is the callback that is called when the command is selected for
+execution.
+
+Calling convention:
+
+   sub ($app, $opts, $args)
+   # $app:  hash ref with the details on the whole applications
+   # $opts: hash ref with options for the command
+   # $args: array ref with residual (command line) arguments
+
+=item C<children>
+
+This is a list of children, i.e. allowed sub-commands, specified by
+their identifier in the C<commands> hash. This list is normally enriched
+with sub-commands C<help> and C<commands> automatically, unless the
+automatic children have been changed or disabled. It is possible to mark
+a command as a I<leaf> (missing also sub-commands C<help>/C<commands>)
+by setting this parameter to a false value, otherwise it must be an
+array;
 
 =item C<default-child>
 
@@ -467,6 +497,86 @@ sub-command, so it allows addressing the command itself directly.
 
 This must be the key associated to a child in the C<commands> mapping,
 i.e. the same name that is put in the C<children> array.
+
+=item C<dispatch>
+
+For commands with children, this completely overrides the child search
+mechanism by calling a custom I<executable>, which is expected to return
+the name of a sub-command or the empty list is case the specific
+command's C<execute> should be called instead.
+
+Calling convention:
+
+   sub ($app, $spec, $args)
+   # $app:  hash ref with the details on the whole applications
+   # $spec: hash ref with the specification of the command
+   # $args: array ref with residual (command line) arguments
+
+The configuration that has been assembled up to the specific command can
+be retrieved at C<< $app->{configs}[-1] >>.
+
+The return value must be either an empty list/C<undef> or the name of a
+children (actually it can be any command).
+
+=item C<fallback>
+
+=item C<fallback-to>
+
+=item C<fallback-to-default>
+
+For commands with children, these options allows figuring out a
+I<fallback> command to execute if no child can be found. This allows
+building I<Do What I Mean> interfaces where e.g. a sub-command should be
+selected by default.
+
+As an example, suppose the application has a C<search> and a C<stats>
+sub-commands, where the C<search> is expected to be invoked the vast
+majority of times:
+
+   myapp search this
+   myapp search that is foo
+   myapp stats
+
+It's tempting at this point to get rid of the C<search> word to speed
+things up, while still preserving the sub-commands resolution mechanism:
+
+   myapp this
+   myapp that is foo
+   myapp stats
+
+In the first two cases, C<App::Easer> would normally look for
+sub-commands C<this> and C<that> respectively, failing. With a fallback,
+though, it's possible to select another command and implement the
+C<DWIM> interface.
+
+C<fallback> is an I<executable> that is expected to return the name of a
+child (or actually any command) or the empty list/C<undef>, in which
+case the current command's C<execute> will be used instead. This is the
+most flexible way of doing the fallback.
+
+Calling convention:
+
+   sub ($app, $spec, $args)
+   # $app:  hash ref with the details on the whole applications
+   # $spec: hash ref with the specification of the command
+   # $args: array ref with residual (command line) arguments
+
+The configuration that has been assembled up to the specific command can
+be retrieved at C<< $app->{configs}[-1] >>.
+
+C<fallback-to> sets the name of a children (or actually any command) as
+a static string. It can also be set to C<undef>, which means that the
+current command's C<execute> should be used instead.
+
+C<fallback-to-default> selects whatever default is set for the command;
+it is a boolean-ish option.
+
+
+=item C<leaf>
+
+This is an alternative, hopefully more readable, way to set the command
+as a I<leaf> and avoid considering any sub-command, including the
+auto-generated ones.
 
 =item C<no-auto>
 
