@@ -765,6 +765,8 @@ I<subroutine> is taken and returned. If no subroutine exists, an exception
 is thrown (C<no '$subname' in '$package'>);
 
 
+=head2 fetch_subcommand_default
+
 =head2 fetch_subcommand
 
 =head2 generate_factory
