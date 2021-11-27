@@ -1,5 +1,10 @@
 {{$NEXT}}
 
+0.007  2021-11-27 08:36:21 CET
+   - Add fallback, fallback-to, fallback-to-default, and dispatch options
+     to sub-commands
+   - Add documentation on caling conventions for executables.
+
 0.006  2021-08-29 22:05:40 CEST
    - regenerate expansions with the right Template::Perlish (1.56)
 

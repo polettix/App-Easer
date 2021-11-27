@@ -249,12 +249,24 @@ ease navigating in the hierarchy and get information on the
 The configuration is collected by a function provided by `App::Easer`
 that can be optionally overridden by setting a different executable for
 `collect` under `configuration`. This of course requires
-re-implementing the options value gathering from scratch.
+re-implementing the options value gathering from scratch. Calling
+convention:
+
+    sub ($app, $spec, $args)
+    # $app:  hash ref with the details on the whole applications
+    # $spec: hash ref with the specification of the command
+    # $args: array ref with residual (command line) arguments
+
+This function is expected to return a list with two items, the first a
+hash reference with the collected configuration options, the second an
+array reference with the residual arguments.
 
 The `merge` executable allows setting a function that merges several
 hashes together. The default implementation operates at the higher level
 of the hashes only, giving priority to the first hashes provided (in
-order).
+order).  Calling convention:
+
+    sub (@list_of_hashes_to_merge) # returns a hash reference
 
 The `validate` executable allows setting a validator. By default the
 validation is performed using [Params::Validate](https://metacpan.org/pod/Params::Validate) (if available, it is
@@ -300,23 +312,30 @@ The command definition is a hash with the following shape:
     help: foo the bar
     description: foo allows us to foo the bar
     supports: ['foo', 'Foo']
+
     options:
       - name: whip
         getopt: 'whip|w=s'
         environment: FOO_WHIP
         default: gargle
         help: 'beware of the whip'
-    execute: «executable»
-    children: ['foo.bar', 'baz']
-    leaf: 0
     allow-residual-options: 0
-    collect:  «executable»
-    merge: «merge»
-    validate: ... «executable» or data structure...
     sources: ['+CmdLine', '+Environment', '+Parent', '+Default']
+
+    collect:  «executable»
+    merge:    «executable»
+    validate: ... «executable» or data structure...
+    commit:   «executable»
+    execute:  «executable»
+
+    children: ['foo.bar', 'baz']
     default-child: 'foo.bar'
+    dispatch: «executable»
+    fallback: «executable»
+    fallback-to: 'baz'
+    fallback-to-default: 1
+    leaf: 0
     no-auto: 1
-    commit: «executable»
 
 The following keys are supported:
 
@@ -341,27 +360,6 @@ The following keys are supported:
     other sub-options are self-explanatory (`getopt`, `environment`, and
     `default`).
 
-- `execute`
-
-    This is the callback that is called when the command is selected for
-    execution.
-
-- `children`
-
-    This is a list of children, i.e. allowed sub-commands, specified by
-    their identifier in the `commands` hash. This list is normally enriched
-    with sub-commands `help` and `commands` automatically, unless the
-    automatic children have been changed or disabled. It is possible to mark
-    a command as a _leaf_ (missing also sub-commands `help`/`commands`)
-    by setting this parameter to a false value, otherwise it must be an
-    array;
-
-- `leaf`
-
-    This is an alternative, hopefully more readable, way to set the command
-    as a _leaf_ and avoid considering any sub-command, including the
-    auto-generated ones.
-
 - `allow-residual-options`
 
     This boolean indicates whether additional options in the command are
@@ -374,6 +372,19 @@ The following keys are supported:
     Reasons to disable this (by setting this option to true) might be if a
     leaf command will then use the rest of the argument list to e.g. call an
     external program.
+
+- `sources`
+
+    This is the list of sources to gather values for options. It defaults to
+    whatever has been set in the top-level `configuration` of the
+    application, or `+CmdLine +Environment +Parent +Default` by default.
+
+    It might be helpful to override this setting in the `MAIN` entry point
+    command, e.g. to add the loading of a configuration file once and for
+    all.
+
+    Items are executables, i.e. sub references or names that will be
+    _resolved_ into sub references through the _factory_.
 
 - `collect`
 - `merge`
@@ -394,18 +405,37 @@ The following keys are supported:
     search mechanism investigates further down looking for the target
     command.
 
-- `sources`
+    Calling convention:
 
-    This is the list of sources to gather values for options. It defaults to
-    whatever has been set in the top-level `configuration` of the
-    application, or `+CmdLine +Environment +Parent +Default` by default.
+        sub ($app, $spec, $args)
+        # $app:  hash ref with the details on the whole applications
+        # $spec: hash ref with the specification of the command
+        # $args: array ref with residual (command line) arguments
 
-    It might be helpful to override this setting in the `MAIN` entry point
-    command, e.g. to add the loading of a configuration file once and for
-    all.
+    The configuration that has been assembled up to the specific command can
+    be retrieved at `$app->{configs}[-1]`.
 
-    Items are executables, i.e. sub references or names that will be
-    _resolved_ into sub references through the _factory_.
+- `execute`
+
+    This is the callback that is called when the command is selected for
+    execution.
+
+    Calling convention:
+
+        sub ($app, $opts, $args)
+        # $app:  hash ref with the details on the whole applications
+        # $opts: hash ref with options for the command
+        # $args: array ref with residual (command line) arguments
+
+- `children`
+
+    This is a list of children, i.e. allowed sub-commands, specified by
+    their identifier in the `commands` hash. This list is normally enriched
+    with sub-commands `help` and `commands` automatically, unless the
+    automatic children have been changed or disabled. It is possible to mark
+    a command as a _leaf_ (missing also sub-commands `help`/`commands`)
+    by setting this parameter to a false value, otherwise it must be an
+    array;
 
 - `default-child`
 
@@ -416,6 +446,83 @@ The following keys are supported:
 
     This must be the key associated to a child in the `commands` mapping,
     i.e. the same name that is put in the `children` array.
+
+- `dispatch`
+
+    For commands with children, this completely overrides the child search
+    mechanism by calling a custom _executable_, which is expected to return
+    the name of a sub-command or the empty list is case the specific
+    command's `execute` should be called instead.
+
+    Calling convention:
+
+        sub ($app, $spec, $args)
+        # $app:  hash ref with the details on the whole applications
+        # $spec: hash ref with the specification of the command
+        # $args: array ref with residual (command line) arguments
+
+    The configuration that has been assembled up to the specific command can
+    be retrieved at `$app->{configs}[-1]`.
+
+    The return value must be either an empty list/`undef` or the name of a
+    children (actually it can be any command).
+
+- `fallback`
+- `fallback-to`
+- `fallback-to-default`
+
+    For commands with children, these options allows figuring out a
+    _fallback_ command to execute if no child can be found. This allows
+    building _Do What I Mean_ interfaces where e.g. a sub-command should be
+    selected by default.
+
+    As an example, suppose the application has a `search` and a `stats`
+    sub-commands, where the `search` is expected to be invoked the vast
+    majority of times:
+
+        myapp search this
+        myapp search that is foo
+        myapp stats
+
+    It's tempting at this point to get rid of the `search` word to speed
+    things up, while still preserving the sub-commands resolution mechanism:
+
+        myapp this
+        myapp that is foo
+        myapp stats
+
+    In the first two cases, `App::Easer` would normally look for
+    sub-commands `this` and `that` respectively, failing. With a fallback,
+    though, it's possible to select another command and implement the
+    `DWIM` interface.
+
+    `fallback` is an _executable_ that is expected to return the name of a
+    child (or actually any command) or the empty list/`undef`, in which
+    case the current command's `execute` will be used instead. This is the
+    most flexible way of doing the fallback.
+
+    Calling convention:
+
+        sub ($app, $spec, $args)
+        # $app:  hash ref with the details on the whole applications
+        # $spec: hash ref with the specification of the command
+        # $args: array ref with residual (command line) arguments
+
+    The configuration that has been assembled up to the specific command can
+    be retrieved at `$app->{configs}[-1]`.
+
+    `fallback-to` sets the name of a children (or actually any command) as
+    a static string. It can also be set to `undef`, which means that the
+    current command's `execute` should be used instead.
+
+    `fallback-to-default` selects whatever default is set for the command;
+    it is a boolean-ish option.
+
+- `leaf`
+
+    This is an alternative, hopefully more readable, way to set the command
+    as a _leaf_ and avoid considering any sub-command, including the
+    auto-generated ones.
 
 - `no-auto`
 
