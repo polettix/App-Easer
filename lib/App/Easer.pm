@@ -438,11 +438,9 @@ sub print_help ($self, $target) {
 
 sub stock_SpecFromHash ($s, $cmd) { $s->{application}{commands}{$cmd} }
 
-sub stock_SpecFromHashOrModule ($self, $cmd) {
-   $self->{application}{commands}{$cmd} //= spec_from_module($self, $cmd);
+sub stock_SpecFromHashOrModule ($s, $cmd) {
+   $s->{application}{commands}{$cmd} //= $s->{factory}->($cmd, 'spec')->();
 }
-
-sub spec_from_module ($self, $cmd) { ... }
 
 sub fetch_spec_for ($self, $command) {
    my $fetcher = $self->{application}{configuration}{specfetch}
