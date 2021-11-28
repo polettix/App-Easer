@@ -176,7 +176,7 @@ sub default_getopt_config ($has_children) {
 
 sub execute ($self, $args) {
    my $command    = $self->{trail}[-1][0];
-   my $executable = $self->{application}{commands}{$command}{execute}
+   my $executable = fetch_spec_for($self, $command)->{execute}
      or die "no executable for '$command'\n";
    $executable = $self->{factory}->($executable, 'execute');    # "resolve"
    my $config = $self->{configs}[-1] // {};
@@ -244,7 +244,7 @@ sub generate_factory ($c) {
 
 sub get_child ($self, $spec, $name) {
    for my $child (get_children($self, $spec)) {
-      my $command = $self->{application}{commands}{$child};
+      my $command = fetch_spec_for($self, $child);
       next
         unless grep { $_ eq $name }
         ($command->{supports} //= [$child])->@*;
@@ -279,22 +279,22 @@ sub get_children ($self, $spec) {
    return (@children, @auto);
 } ## end sub get_children
 
+# traverse a whole @$list of sub-commands from $start. This is used to
+# list "commands" at a certain sub-level or show help
 sub get_descendant ($self, $start, $list) {
    my $target = $start;
-   my $cmds   = $self->{application}{commands};
    my $path;
    for my $desc ($list->@*) {
       $path = defined($path) ? "$path/$desc" : $desc;
-      my $command = $cmds->{$target}
+      my $command = fetch_spec_for($self, $target)
         or die "cannot find sub-command '$path'\n";
       defined($target = get_child($self, $command, $desc))
         or die "cannot find sub-command '$path'\n";
    } ## end for my $desc ($list->@*)
 
    # check that this last is associated to a real command
-   $cmds->{$target} or die "cannot find sub-command '$path'\n";
-
-   return $target;
+   return $target if fetch_spec_for($self, $target);
+   die "cannot find sub-command '$path'\n";
 } ## end sub get_descendant
 
 sub has_children ($self, $spec) { get_children($self, $spec) ? 1 : 0 }
@@ -307,7 +307,7 @@ sub list_commands ($self, $children) {
    my $retval = '';
    open my $fh, '>', \$retval;
    for my $child ($children->@*) {
-      my $command = $self->{application}{commands}{$child};
+      my $command = fetch_spec_for($self, $child);
       my $help    = $command->{help};
       my @aliases = ($command->{supports} // [$child])->@*;
       next unless @aliases;
@@ -367,7 +367,7 @@ sub params_validate ($self, $spec, $args) {
 } ## end sub params_validate
 
 sub print_commands ($self, $target) {
-   my $command = $self->{application}{commands}{$target};
+   my $command = fetch_spec_for($self, $target);
    my $fh =
      $self->{application}{configuration}{'help-on-stderr'}
      ? \*STDERR
@@ -381,7 +381,7 @@ sub print_commands ($self, $target) {
 }
 
 sub print_help ($self, $target) {
-   my $command =  $self->{application}{commands}{$target};
+   my $command = fetch_spec_for($self, $target);
    my $fh =
      $self->{application}{configuration}{'help-on-stderr'}
      ? \*STDERR
@@ -436,6 +436,20 @@ sub print_help ($self, $target) {
    }
 }
 
+sub stock_SpecFromHash ($s, $cmd) { $s->{application}{commands}{$cmd} }
+
+sub stock_SpecFromHashOrModule ($self, $cmd) {
+   $self->{application}{commands}{$cmd} //= spec_from_module($self, $cmd);
+}
+
+sub spec_from_module ($self, $cmd) { ... }
+
+sub fetch_spec_for ($self, $command) {
+   my $fetcher = $self->{application}{configuration}{specfetch}
+      // \&stock_SpecFromHash;
+   return $self->{factory}->($fetcher, 'specfetch')->($self, $command);
+}
+
 sub run ($application, $args) {
    $application = add_auto_commands(load_application($application));
    my $self = {
@@ -451,7 +465,7 @@ sub run ($application, $args) {
 
    while ('necessary') {
       my $command = $self->{trail}[-1][0];
-      my $spec    = $application->{commands}{$command}
+      my $spec    = fetch_spec_for($self, $command)
         or die "no definition for '$command'\n";
 
       $args = collect_options($self, $spec, $args);
