@@ -166,10 +166,11 @@ application managed by C<App::Easer>:
       create: «executable»
       prefixes: «hash or array of hashes»
    configuration:
-      collect:  «executable»
-      merge:    «executable»
-      validate: «executable»
-      sources:  «array»
+      collect:   «executable»
+      merge:     «executable»
+      specfetch: «executable»
+      validate:  «executable»
+      sources:   «array»
       'auto-children':  «false or array»
       'help-on-stderr': «boolean»
       'auto-leaves':    «boolean»
@@ -194,8 +195,13 @@ followed, assuming the initial command is defined as C<MAIN>:
 
 =item *
 
-the specification of the command is taken and option values for that
-command are gathered, I<consuming> part of the command-line arguments;
+the specification of the command is fetched, either from a configuration
+hash or by some other method, according to the I<specfetch> hook;
+
+=item *
+
+option values for that command are gathered, I<consuming> part of the
+command-line arguments;
 
 =item *
 
@@ -277,10 +283,11 @@ the normal working of C<App::Easer>.
 =head2 Configuration Parsing Customization
 
    configuration:
-      collect:  «executable»
-      merge:    «executable»
-      validate: «executable»
-      sources:  «array»
+      collect:   «executable»
+      merge:     «executable»
+      specfetch: «executable»
+      validate:  «executable»
+      sources:   «array»
       'auto-children': «false or array»
       'help-on-stderr': «boolean»
       'auto-leaves':    «boolean»
@@ -313,6 +320,15 @@ of the hashes only, giving priority to the first hashes provided (in
 order).  Calling convention:
 
    sub (@list_of_hashes_to_merge) # returns a hash reference
+
+The C<specfetch> executable allows setting a function to perform
+resolution of a command identifier (as e.g. stored in the C<children>)
+or an upper command) into a specification. By default the internal
+function corresponding to the executable specification string
+C<+SpecFromHash> is used, insisting that the whole application is
+entirely pre-assembled in the specification hash/object; it's also
+possible to use C<+SpecFromHashOrModule> for allowing searching through
+modules too.
 
 The C<validate> executable allows setting a validator. By default the
 validation is performed using L<Params::Validate> (if available, it is
@@ -765,6 +781,18 @@ I<subroutine> is taken and returned. If no subroutine exists, an exception
 is thrown (C<no '$subname' in '$package'>);
 
 
+=head2 fetch_spec_for
+
+   my $spec = fetch_spec_for($self, $name);
+
+Encapsulation for accessing the specification of one available commands.
+It normally maps onto C<< $self->{application}{commands}{$name} >> but
+it can be extended, e.g. with C<specfetch> set to
+C<+SpecFromHashOrModule> or a custom resolution method.
+
+Calling it can return a hash reference with the command specification or
+C<undef> if no command can be found.
+
 =head2 fetch_subcommand_default
 
 =head2 fetch_subcommand
@@ -818,6 +846,16 @@ is thrown (C<no '$subname' in '$package'>);
 =head2 stock_commands
 
 =head2 stock_help
+
+=head2 stock_SpecFromHash
+
+Used as a C<specfetch> for accessing the specifications when set
+directly in the hash. It's the default.
+
+=head2 stock_SpecFromHashOrModule
+
+Used as a C<specfetch> for accessing the specification first in the
+hash, then looking into modules (and caching the search in the hash).
 
 =head2 validate_configuration
 

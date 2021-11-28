@@ -57,7 +57,7 @@
          "version" : "0.007"
       }
    },
-   "release_status" : "testing",
+   "release_status" : "stable",
    "resources" : {
       "bugtracker" : {
          "web" : "https://github.com/polettix/App-Easer/issues"

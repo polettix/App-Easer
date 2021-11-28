@@ -147,10 +147,11 @@ application managed by `App::Easer`:
        create: «executable»
        prefixes: «hash or array of hashes»
     configuration:
-       collect:  «executable»
-       merge:    «executable»
-       validate: «executable»
-       sources:  «array»
+       collect:   «executable»
+       merge:     «executable»
+       specfetch: «executable»
+       validate:  «executable»
+       sources:   «array»
        'auto-children':  «false or array»
        'help-on-stderr': «boolean»
        'auto-leaves':    «boolean»
@@ -171,8 +172,10 @@ of `App::Easer` itself and take sensible defaults when not provided.
 When an application is run, the following high level algorithm is
 followed, assuming the initial command is defined as `MAIN`:
 
-- the specification of the command is taken and option values for that
-command are gathered, _consuming_ part of the command-line arguments;
+- the specification of the command is fetched, either from a configuration
+hash or by some other method, according to the _specfetch_ hook;
+- option values for that command are gathered, _consuming_ part of the
+command-line arguments;
 - the configuration is optionally validated;
 - a _commit_ hook is optionally called, allowing an intermediate command
 to perform some actions before a sub-command is run;
@@ -231,10 +234,11 @@ the normal working of `App::Easer`.
 ## Configuration Parsing Customization
 
     configuration:
-       collect:  «executable»
-       merge:    «executable»
-       validate: «executable»
-       sources:  «array»
+       collect:   «executable»
+       merge:     «executable»
+       specfetch: «executable»
+       validate:  «executable»
+       sources:   «array»
        'auto-children': «false or array»
        'help-on-stderr': «boolean»
        'auto-leaves':    «boolean»
@@ -267,6 +271,15 @@ of the hashes only, giving priority to the first hashes provided (in
 order).  Calling convention:
 
     sub (@list_of_hashes_to_merge) # returns a hash reference
+
+The `specfetch` executable allows setting a function to perform
+resolution of a command identifier (as e.g. stored in the `children`)
+or an upper command) into a specification. By default the internal
+function corresponding to the executable specification string
+`+SpecFromHash` is used, insisting that the whole application is
+entirely pre-assembled in the specification hash/object; it's also
+possible to use `+SpecFromHashOrModule` for allowing searching through
+modules too.
 
 The `validate` executable allows setting a validator. By default the
 validation is performed using [Params::Validate](https://metacpan.org/pod/Params::Validate) (if available, it is
