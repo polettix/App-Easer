@@ -22,6 +22,7 @@ my $app = {
             },
          ],
          execute => sub {
+            LocalTester::command_execute(MAIN => @_);
             print {*STDOUT} 'galook!';
             print {*STDERR} 'gaaaah!';
             return 42;

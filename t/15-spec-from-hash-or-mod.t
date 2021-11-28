@@ -8,6 +8,7 @@ use LocalTester;
 my $app = {
    configuration => {
       'auto-leaves' => 1,
+      specfetch => '+SpecFromHashOrModule',
    },
    commands => {
       MAIN => {
@@ -25,45 +26,13 @@ my $app = {
             },
          ],
          'default-child' => 'bar',
-         children        => [qw< foo bar >],
+         children        => [qw< Foo bar >], # Foo & Baz spec from module
       },
-      foo => {
-         help        => 'sub-command foo',
-         description => 'first-level sub-command foo',
-         supports    => ['foo', 'Foo'],
-         options     => [
-            {
-               getopt => 'hey|h=s',
-            },
-         ],
-         children        => ['baz'],
-         'default-child' => 'baz',
-      },
-      bar => {
+      bar => { # the spec for this is here, implementation in module Bar
          help        => 'sub-command bar',
          description => 'first-level sub-command bar',
          options     => [],
-         execute     => sub ($main, $conf, $args) {
-            LocalTester::command_execute(bar => @_);
-            print {*STDOUT} 'bar on out';
-            print {*STDERR} 'bar on err';
-            return 'Bar';
-         },
-      },
-      baz => {
-         help        => 'sub-sub-command baz',
-         description => 'second-level sub-command baz',
-         options     => [
-            {
-               getopt => 'last|l=i',
-            },
-         ],
-         execute => sub ($main, $conf, $args) {
-            LocalTester::command_execute(baz => @_);
-            print {*STDOUT} 'baz on out';
-            print {*STDERR} 'baz on err';
-            return 'BAZ';
-         },
+         execute     => 'Bar',
       },
    },
 };
@@ -116,13 +85,13 @@ subtest 'foo help baz' => sub {
    )->stdout_like(qr{sub-sub-command baz});
 };
 
-subtest 'foo baz' => sub {
+subtest 'foo baz 1' => sub {
    test_run($app, ['foo', 'baz'], {}, 'baz')
      ->no_exceptions->result_is('BAZ')->stdout_like(qr{baz on out})
      ->stderr_like(qr{baz on err});
 };
 
-subtest 'foo baz' => sub {
+subtest 'foo baz 2' => sub {
    test_run($app, [qw< --foo foo --hey you baz --last 12 FP >], {}, 'baz')
      ->no_exceptions->result_is('BAZ')
      ->conf_is({foo => 1, bar => 'buzz', hey => 'you', last => 12})
@@ -167,3 +136,50 @@ subtest 'bar help (help is ignored)' => sub {
 };
 
 done_testing();
+
+
+package Foo;
+sub spec {
+   return {
+      help        => 'sub-command foo',
+      description => 'first-level sub-command foo',
+      supports    => ['foo', 'Foo'],
+      options     => [
+         {
+            getopt => 'hey|h=s',
+         },
+      ],
+      children        => ['Baz'],
+      'default-child' => 'Baz',
+   };
+}
+
+package Bar;
+sub execute ($main, $conf, $args) {
+   print {*STDOUT} 'bar on out';
+   print {*STDERR} 'bar on err';
+   return 'Bar';
+};
+
+package Baz;
+sub spec {
+   return {
+      help        => 'sub-sub-command baz',
+      description => 'second-level sub-command baz',
+      supports    => ['baz'],
+      options     => [
+         {
+            getopt => 'last|l=i',
+         },
+      ],
+      execute => 'Baz',
+   };
+}
+sub execute {
+   LocalTester::command_execute(baz => @_);
+   print {*STDOUT} 'baz on out';
+   print {*STDERR} 'baz on err';
+   return 'BAZ';
+}
+
+1;
