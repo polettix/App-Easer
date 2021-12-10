@@ -300,7 +300,23 @@ sub get_descendant ($self, $start, $list) {
 sub has_children ($self, $spec) { get_children($self, $spec) ? 1 : 0 }
 
 sub hash_merge {
-   return {map { $_->%* } reverse @_};
+   my (%retval, %is_overridable);
+   for my $href (@_) {
+      for my $src_key (keys $href->%*) {
+         my $dst_key = $src_key;
+         my $this_overridable;
+         if ($dst_key =~ m{\A //= (.*) \z}mxs) { # overridable
+            $dst_key = $1;
+            $is_overridable{$dst_key} = 1 unless exists $retval{$dst_key};
+            $this_overridable = 1;
+         }
+         $retval{$dst_key} = $href->{$src_key}
+            if $is_overridable{$dst_key} || ! exists($retval{$dst_key});
+         $is_overridable{$dst_key} = 0 unless $this_overridable;
+      }
+   }
+   return \%retval;
+   # was a simple: return {map { $_->%* } reverse @_};
 }
 
 sub list_commands ($self, $children) {
@@ -539,7 +555,7 @@ sub stock_JsonFiles ($self, $spec, @ignore) {
 
 sub stock_Default ($self, $spec, @ignore) {
    return {
-      map { name_for_option($_) => $_->{default} }
+      map { '//=' . name_for_option($_) => $_->{default} }
       grep { exists $_->{default} } ($spec->{options} // [])->@*
    };
 } ## end sub stock_Default
@@ -612,12 +628,13 @@ sub stock_help ($self, $config, $args) {
    return 0;
 } ## end sub stock_help
 
-sub stock_DefaultSources { [qw< +CmdLine +Environment +Parent +Default >] }
+sub stock_DefaultSources { [qw< +Default +CmdLine +Environment +Parent >] }
 
 sub stock_SourcesWithFiles {
    [
-      qw< +CmdLine +Environment +Parent +JsonFileFromConfig +JsonFiles
-        +Default >
+      qw< +Default +CmdLine +Environment +Parent
+         +JsonFileFromConfig +JsonFiles
+        >
    ]
 } ## end sub stock_SourcesWithFiles
 
