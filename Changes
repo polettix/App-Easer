@@ -1,5 +1,11 @@
 {{$NEXT}}
 
+0.007001  2021-12-10 21:58:47 CET
+   - Add specfetch and SpecFromHashOrModule to divide apps into modules.
+   - Handle defaults anticipating availability of their values but
+     still overriding them.
+   - Add some more doc notes.
+
 0.007  2021-11-27 08:36:21 CET
    - Add fallback, fallback-to, fallback-to-default, and dispatch options
      to sub-commands
