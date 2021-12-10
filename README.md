@@ -287,10 +287,32 @@ anyway loaded only when needed).
 
 It is possible to set several _sources_ for gathering options values,
 setting them using the `sources` array. By default it is set to the
-ordered list with `+CmdLine`, `+Environment`, `+Parent`, and
-`+Default`, meaning that options from the command line will have the
+ordered list with `+Default`, `+CmdLine`, `+Environment`, and
+`+Parent`, , meaning that options from the command line will have the
 highest precedence, then the environment, then whatever comes from the
-parent command configuration, then default values if present.
+parent command configuration, then default values if present. This can
+be set explicitly with `+DefaultSources`.
+
+As an alternative, `sources` can be set to `+SourcesWithFiles`, which
+adds `+JsonFileFromConfig` and `+JsonFiles` to the ones above. The
+former looks for a configuration named `config` (or whatever is set as
+`config-option` in the overall configuration hash) to load a JSON file
+with additional configurations; the latter looks for a list of JSON
+files to try in `config-files` inside the configuration hash.
+
+> Although the `+Default` source is put _first_, it actually acts as the
+> one with the _least precedence_ by how it is coded and how the merging
+> algorithm is implemented. From a practical point of view it's _like_ it
+> were put last, but is put first instead so that its defaults can be
+> applied as options are gathered along the way.
+>
+> One case where this comes handy is in managing a `--config` option to
+> pass a configuration file name to load some external file for additional
+> configurations (e.g. sources option `+SourcesWithFiles`). In it,
+> default configuration must still appear with the _least precedence_,
+> but still it can be handy to set a default file to load upon starting,
+> which means that it's handy to have this default at hand before the
+> configuration files are supposed to be loaded.
 
 As anticipated, the `help` and `commands` sub-commands are
 automatically generated and associated to each command by default (more

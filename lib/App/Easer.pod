@@ -336,10 +336,36 @@ anyway loaded only when needed).
 
 It is possible to set several I<sources> for gathering options values,
 setting them using the C<sources> array. By default it is set to the
-ordered list with C<+CmdLine>, C<+Environment>, C<+Parent>, and
-C<+Default>, meaning that options from the command line will have the
+ordered list with C<+Default>, C<+CmdLine>, C<+Environment>, and
+C<+Parent>, , meaning that options from the command line will have the
 highest precedence, then the environment, then whatever comes from the
-parent command configuration, then default values if present.
+parent command configuration, then default values if present. This can
+be set explicitly with C<+DefaultSources>.
+
+As an alternative, C<sources> can be set to C<+SourcesWithFiles>, which
+adds C<+JsonFileFromConfig> and C<+JsonFiles> to the ones above. The
+former looks for a configuration named C<config> (or whatever is set as
+C<config-option> in the overall configuration hash) to load a JSON file
+with additional configurations; the latter looks for a list of JSON
+files to try in C<config-files> inside the configuration hash.
+
+=over
+
+Although the C<+Default> source is put I<first>, it actually acts as the
+one with the I<least precedence> by how it is coded and how the merging
+algorithm is implemented. From a practical point of view it's I<like> it
+were put last, but is put first instead so that its defaults can be
+applied as options are gathered along the way.
+
+One case where this comes handy is in managing a C<--config> option to
+pass a configuration file name to load some external file for additional
+configurations (e.g. sources option C<+SourcesWithFiles>). In it,
+default configuration must still appear with the I<least precedence>,
+but still it can be handy to set a default file to load upon starting,
+which means that it's handy to have this default at hand before the
+configuration files are supposed to be loaded.
+
+=back
 
 As anticipated, the C<help> and C<commands> sub-commands are
 automatically generated and associated to each command by default (more
