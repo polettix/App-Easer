@@ -171,9 +171,10 @@ application managed by C<App::Easer>:
       specfetch: «executable»
       validate:  «executable»
       sources:   «array»
-      'auto-children':  «false or array»
-      'help-on-stderr': «boolean»
-      'auto-leaves':    «boolean»
+      'auto-children':    «false or array»
+      'help-on-stderr':   «boolean»
+      'auto-leaves':      «boolean»
+      'auto-environment': «boolean»
    commands:
       cmd-1:
          «command definition»
@@ -290,9 +291,10 @@ the normal working of C<App::Easer>.
       specfetch: «executable»
       validate:  «executable»
       sources:   «array»
-      'auto-children':  «false or array»
-      'help-on-stderr': «boolean»
-      'auto-leaves':    «boolean»
+      'auto-children':    «false or array»
+      'help-on-stderr':   «boolean»
+      'auto-leaves':      «boolean»
+      'auto-environment': «boolean»
 
 The C<name> configuration allows setting a name for the application,
 which can e.g. be used to generate automatic names for environment
@@ -410,6 +412,10 @@ still be set to a I<false> value if the automatic sub-commands above are
 deemed necessary for commands that have no explicit children in the
 hierarchy.
 
+Option C<auto-environment> turns on automatic addition of environment
+variables to options, by setting the associated setting to 1. This can
+also be set locally in a command.
+
 =head2 Commands Specifications
 
 All commands are stored in a hash of hashes, where the key represents an
@@ -430,6 +436,7 @@ The command definition is a hash with the following shape:
        environment: FOO_WHIP
        default: gargle
        help: 'beware of the whip'
+   auto-environment: 0
    allow-residual-options: 0
    sources: ['+CmdLine', '+Environment', '+Parent', '+Default']
 

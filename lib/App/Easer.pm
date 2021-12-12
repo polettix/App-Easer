@@ -444,9 +444,11 @@ sub print_help ($self, $target) {
             printf {$fh} "%15s  command-line: %s\n", '', shift(@lines);
             printf {$fh} "%15s                %s\n", '', $_ for @lines;
          }
-         printf {$fh} "%15s  environment : %s\n", '',
-           $enamr->($option) // '*undef*'
-           if defined $option->{environment};
+
+         if (defined(my $env_name = $enamr->($option))) {
+            printf {$fh} "%15s  environment : %s\n", '', $env_name;
+         }
+
          printf {$fh} "%15s  default     : %s\n", '',
            $option->{default} // '*undef*'
            if exists $option->{default};
@@ -586,8 +588,12 @@ sub stock_Environment ($self, $spec, @ignore) {
 } ## end sub stock_Environment
 
 sub stock_NamEnv ($self, $cspec, $ospec) {
-   my $env = $ospec->{environment} // return undef;
-   return $env unless $env eq '1';
+   my $aek = 'auto-environment';
+   my $autoenv = exists $cspec->{$aek} ? $cspec->{$aek}
+      : $self->{application}{configuration}{$aek} // undef;
+   my $env = exists $ospec->{environment} ? $ospec->{environment}
+      : $autoenv ? 1 : undef;
+   return $env unless ($env // '') eq '1';
    my $appname = $self->{application}{configuration}{name} // '';
    my $optname = name_for_option($ospec);
    return uc(join '_', $appname, $optname);
