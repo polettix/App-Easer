@@ -446,7 +446,7 @@ sub print_help ($self, $target) {
          }
          printf {$fh} "%15s  environment : %s\n", '',
            $enamr->($option) // '*undef*'
-           if exists $option->{environment};
+           if defined $option->{environment};
          printf {$fh} "%15s  default     : %s\n", '',
            $option->{default} // '*undef*'
            if exists $option->{default};
