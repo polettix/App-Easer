@@ -54,7 +54,7 @@
    "provides" : {
       "App::Easer" : {
          "file" : "lib/App/Easer.pm",
-         "version" : "0.007001"
+         "version" : "0.007002"
       }
    },
    "release_status" : "testing",
@@ -69,7 +69,7 @@
          "web" : "https://github.com/polettix/App-Easer"
       }
    },
-   "version" : "0.007001",
+   "version" : "0.007002",
    "x_contributors" : [
       "Flavio Poletti <flavio@polettix.it>"
    ],

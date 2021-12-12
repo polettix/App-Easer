@@ -1,5 +1,10 @@
 {{$NEXT}}
 
+0.007002  2021-12-12 20:13:40 CET
+   - Set auto-leaves to 1 by default, it just makes sense.
+   - Add support for simplified env var setting, both setting it
+     to a plain 1 or through auto-environment.
+
 0.007001  2021-12-10 21:58:47 CET
    - Add specfetch and SpecFromHashOrModule to divide apps into modules.
    - Handle defaults anticipating availability of their values but
