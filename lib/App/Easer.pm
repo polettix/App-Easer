@@ -373,10 +373,18 @@ sub merger ($self, $spec = {}) {
    return $self->{factory}->($merger, 'merge');    # "resolve"
 }
 
+sub env_namer ($self, $cspec) {
+   my $namenv = $cspec->{namenv}
+     // $self->{application}{configuration}{namenv} // \&stock_NamEnv;
+   $namenv = $self->{factory}->($namenv, 'namenv'); # "resolve"
+   return sub ($ospec) { $namenv->($self, $cspec, $ospec) };
+} ## end sub name_for_option ($o)
+
 sub name_for_option ($o) {
    return $o->{name} if defined $o->{name};
    return $1 if defined $o->{getopt} && $o->{getopt} =~ m{\A(\w+)}mxs;
-   return lc $o->{environment} if defined $o->{environment};
+   return lc $o->{environment}
+      if defined $o->{environment} && $o->{environment} ne '1';
    return '~~~';
 } ## end sub name_for_option ($o)
 
@@ -403,6 +411,7 @@ sub print_commands ($self, $target) {
 
 sub print_help ($self, $target) {
    my $command = fetch_spec_for($self, $target);
+   my $enamr   = env_namer($self, $command);
    my $fh =
      $self->{application}{configuration}{'help-on-stderr'}
      ? \*STDERR
@@ -436,7 +445,7 @@ sub print_help ($self, $target) {
             printf {$fh} "%15s                %s\n", '', $_ for @lines;
          }
          printf {$fh} "%15s  environment : %s\n", '',
-           $option->{environment} // '*undef*'
+           $enamr->($option) // '*undef*'
            if exists $option->{environment};
          printf {$fh} "%15s  default     : %s\n", '',
            $option->{default} // '*undef*'
@@ -566,14 +575,23 @@ sub stock_Default ($self, $spec, @ignore) {
 } ## end sub stock_Default
 
 sub stock_Environment ($self, $spec, @ignore) {
+   my $enamr = env_namer($self, $spec);
    return {
-      map { name_for_option($_) => $ENV{$_->{environment}} }
-        grep {
-              exists($_->{environment})
-           && exists($ENV{$_->{environment}})
+      map {
+         my $en = $enamr->($_); # name of environment variable
+         defined($en) && exists($ENV{$en})
+            ? (name_for_option($_) => $ENV{$en}) : ();
         } ($spec->{options} // [])->@*
    };
 } ## end sub stock_Environment
+
+sub stock_NamEnv ($self, $cspec, $ospec) {
+   my $env = $ospec->{environment} // return undef;
+   return $env unless $env eq '1';
+   my $appname = $self->{application}{configuration}{name} // '';
+   my $optname = name_for_option($ospec);
+   return uc(join '_', $appname, $optname);
+}
 
 sub stock_Parent ($self, $spec, @ignore) { $self->{configs}[-1] // {} }
 
