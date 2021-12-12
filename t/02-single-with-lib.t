@@ -6,6 +6,9 @@ use lib dirname(__FILE__);
 use LocalTester;
 
 my $app = {
+   configuration => {
+      'auto-leaves' => 0,
+   },
    commands => {
       MAIN => {
          help        => 'example command',

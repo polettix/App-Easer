@@ -257,6 +257,11 @@ sub get_children ($self, $spec) {
    return if $spec->{leaf};
    return if exists($spec->{children}) && !$spec->{children};
    my @children = ($spec->{children} // [])->@*;
+
+   # set auto-leaves as 1 by default, new in 0.007002
+   $self->{application}{configuration}{'auto-leaves'} = 1
+      unless exists $self->{application}{configuration}{'auto-leaves'};
+
    return
      if $self->{application}{configuration}{'auto-leaves'}
      && @children == 0;    # no auto-children for leaves under auto-leaves

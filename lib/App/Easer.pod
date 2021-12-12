@@ -385,7 +385,11 @@ output (which is the default).
 
 Option C<auto-leaves> allows setting any command that has no I<explicit>
 sub-command as a leaf, which prevents it from getting a C<help> and a
-C<commands> sub-command (or whatever has been put to override them).
+C<commands> sub-command (or whatever has been put to override them). As
+of version 0.007002 this is set to a I<true> value by default, but can
+still be set to a I<false> value if the automatic sub-commands above are
+deemed necessary for commands that have no explicit children in the
+hierarchy.
 
 =head2 Commands Specifications
 
