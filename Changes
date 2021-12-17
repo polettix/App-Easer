@@ -1,5 +1,8 @@
 {{$NEXT}}
 
+0.008  2021-12-17 18:35:03 CET
+   - Release after 112 PASSes on CPAN Testers (thanks!)
+
 0.007002  2021-12-12 20:13:40 CET
    - Set auto-leaves to 1 by default, it just makes sense.
    - Add support for simplified env var setting, both setting it
