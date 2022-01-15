@@ -16,7 +16,7 @@
 title: 'App::Easer Tutorials'
 email: polettix@cpan.org
 description: Some tutorials for App::Easer.
-baseurl: "" # the subpath of your site, e.g. /blog
+baseurl: "/App-Easer" # the subpath of your site, e.g. /blog
 url: "" # the base hostname & protocol for your site, e.g. http://example.com
 twitter_username: polettix
 github_username:  polettix
