@@ -1,0 +1,10 @@
+# Receive the release note by dependabot
+version: 2
+
+updates:
+  - package-ecosystem: "bundler"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    target-branch: "master"
+    versioning-strategy: "increase"

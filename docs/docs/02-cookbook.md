@@ -1,5 +1,5 @@
 ---
-title: 'App::Easer Tutorials'
+title: 'Cookbook'
 layout: default
 ---
 

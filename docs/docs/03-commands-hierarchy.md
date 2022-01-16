@@ -1,5 +1,5 @@
 ---
-title: 'App::Easer Tutorials'
+title: Defining commands hierarchy
 layout: default
 ---
 

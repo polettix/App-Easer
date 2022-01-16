@@ -1,8 +1,5 @@
 ---
-# Feel free to add content and custom Front Matter to this file.
-# To modify the layout, see https://jekyllrb.com/docs/themes/#overriding-theme-defaults
-
-title: 'App::Easer Tutorials'
+title: Getting started
 layout: default
 ---
 
@@ -145,4 +142,4 @@ sub bar ($general, $config, $args) {
 [Perl]: https://www.perl.org/
 [App::FatPacker]: https://metacpan.org/pod/App::FatPacker
 [latest]: https://raw.githubusercontent.com/polettix/App-Easer/main/lib/App/Easer.pm
-[download]: {{ '/assets/template.pl' | prepend: site.baseurl }}
+[download]: templates/getting-started.pl
