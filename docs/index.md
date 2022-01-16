@@ -31,9 +31,9 @@ Available tutorials:
 [App::Easer]: https://metacpan.org/pod/App::Easer
 [Perl]: https://www.perl.org/
 [Git]: https://www.git-scm.com/
-[Getting Started]: {{ '/01-getting-started.html' | relative_url }}
-[Cookbook]: {{ '/02-cookbook.html' | relative_url }}
-[Defining commands hierarchy]: {{ '/03-commands-hierarchy.html' | relative_url }}
-[Options: definition and collection]: {{ '/04-options-definition-collection.html' | relative_url }}
-[Partitioning code into multiple files]: {{ '/05-code-partitioning.html' | relative_url }}
-[Help system]: {{ '/06-help-system.html' | relative_url }}
+[Getting Started]: {{ '/docs/01-getting-started.html' | relative_url }}
+[Cookbook]: {{ '/docs/02-cookbook.html' | relative_url }}
+[Defining commands hierarchy]: {{ '/docs/03-commands-hierarchy.html' | relative_url }}
+[Options: definition and collection]: {{ '/docs/04-options-definition-collection.html' | relative_url }}
+[Partitioning code into multiple files]: {{ '/docs/05-code-partitioning.html' | relative_url }}
+[Help system]: {{ '/docs/06-help-system.html' | relative_url }}
