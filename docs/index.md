@@ -19,8 +19,9 @@ Available documentation:
 
 - [Getting Started][]
 - [Cookbook][]
-- Tutorial:
+- Tutorials:
     - [a to-do application][Tutorial: a to-do application]
+    - [splitting onto multiple modules][tut-splitting]
 - [Defining commands hierarchy][]
 - [Command options][]
 
@@ -40,3 +41,4 @@ Available documentation:
 [Command options]: {{ '/docs/40-command-options.html' | relative_url }}
 [Partitioning code into multiple files]: {{ '/docs/05-code-partitioning.html' | relative_url }}
 [Help system]: {{ '/docs/06-help-system.html' | relative_url }}
+[tut-splitting]: {{ '/docs/15-tutorial-splitting.html' | relative_url }}
