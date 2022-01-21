@@ -39,7 +39,17 @@ my $application = {
          ],
          commit => \&ensure_basedir,
 
-         children => [list_children()],
+         children => [qw<
+            ^List
+            ^Show
+            ^Cat
+            ^Add
+            ^Edit
+            ^Done
+            ^Wait
+            ^Resume
+            ^Remove
+         >],
       }
    }
 };
@@ -51,9 +61,3 @@ sub ensure_basedir ($main, $spec, $args) {
    $path->child($_)->mkpath for qw< ongoing waiting done >;
    return;
 } ## end sub ensure_basedir
-
-# generate list of children ^List, ^Show, ^Cat, ...
-sub list_children {
-   map { '^' . ucfirst($_) }
-      qw< list show cat add edit done wait resume remove >;
-}
