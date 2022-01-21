@@ -762,3 +762,4 @@ basic collection mechanism altogether.
 [download]: {{ '/assets/template.pl' | prepend: site.baseurl }}
 [Getopt::Long]: https://metacpan.org/pod/Getopt::Long
 [Email::Sender]: https://metacpan.org/pod/Email::Sender::Manual::QuickStart#specifying-transport-in-the-environment
+[Params::Validate]: https://metacpan.org/pod/Params::Validate

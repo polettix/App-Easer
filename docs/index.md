@@ -15,10 +15,12 @@ The module is still a somehow moving target, so tutorials might become
 obsolete with time. I hope to update/deprecate them when this happens,
 but watch out!
 
-Available tutorials:
+Available documentation:
 
 - [Getting Started][]
 - [Cookbook][]
+- Tutorial:
+    - [a to-do application][Tutorial: a to-do application]
 - [Defining commands hierarchy][]
 - [Command options][]
 
@@ -33,7 +35,8 @@ Available tutorials:
 [Git]: https://www.git-scm.com/
 [Getting Started]: {{ '/docs/01-getting-started.html' | relative_url }}
 [Cookbook]: {{ '/docs/02-cookbook.html' | relative_url }}
-[Defining commands hierarchy]: {{ '/docs/03-commands-hierarchy.html' | relative_url }}
-[Command options]: {{ '/docs/04-command-options.html' | relative_url }}
+[Tutorial: a to-do application]: {{ '/docs/10-tutorial-base.html' | relative_url }}
+[Defining commands hierarchy]: {{ '/docs/30-commands-hierarchy.html' | relative_url }}
+[Command options]: {{ '/docs/40-command-options.html' | relative_url }}
 [Partitioning code into multiple files]: {{ '/docs/05-code-partitioning.html' | relative_url }}
 [Help system]: {{ '/docs/06-help-system.html' | relative_url }}

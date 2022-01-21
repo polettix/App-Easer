@@ -42,7 +42,7 @@ my $app = {
             ...
         }
     }
-}
+};
 ```
 
 In the example above:
@@ -80,7 +80,7 @@ my $app = {
             ...
         },
     },
-}
+};
 ```
 
 In particular, `supports` allows putting additional aliases, which can
@@ -94,7 +94,7 @@ my $app = {
             ...
         },
     },
-}
+};
 ```
 
 ## Implicit children
@@ -114,6 +114,23 @@ is a *leaf* from an *explicit* point of view). This option `auto-leaves`
 is set by default as of version `0.007002` but it can be turned off
 explicitly.
 
+Beyond the value of `auto-leaves`, it is also possible to explicitly
+mark a command as a leaf by setting the boolean option `leaf`:
+
+```perl
+my $app = {
+    commands => {
+        MAIN => { ... },
+        foo => {
+            leaf => 1,
+            ...
+        },
+    },
+};
+```
+
+This will disable the generation of implicit children too.
+
 Note that this *does not* mean that there's no `help` or `commands`
 available for leaves, just that they are not sub-commands. In other
 terms, if sub-command `whatever` is a leaf command, these would work as
@@ -127,12 +144,53 @@ shell$ myapp commands whatever
 ...
 ```
 
-It is also possible to disable the generation of these automatic
-children `help` and `commands` setting option `auto-children` to a false
-value (it is set to a true value by default). This option is actually
-more than a purely boolean one, though: it is also possible to set it to
-a list of sub-commands (inside an array reference) that will be added to
-all commands that would normally get `help` and `commands`.
+It is possible to disable the generation of part of all of these
+automatic children `help` and `commands`:
+
+- setting option `auto-children` (at the highest `configuration level)
+  to a false value (it is set to a true value by default). This option
+  is actually more than a purely boolean one, though: it is also
+  possible to set it to a list of sub-commands (inside an array
+  reference) that will be added to all commands that would normally get
+  `help` and `commands` (thus acting as an *allow list*);
+- setting option 'no-auto' (at the command level) to the `*` string or
+  pointing to an anonymous array of string, each representing an
+  automatic child to *remove* (acting as a *deny list*).
+
+Example:
+
+```perl
+my $app = {
+    configuration => {
+        'auto-children' => ['help'], # don't bother with "commands"
+        ...
+    },
+    commands => {
+        MAIN => {
+            children => [qw< foo bar commands >], # well... actually...
+        },
+        foo => {
+            'no-auto' => '*',
+            ...
+        },
+        bar => {
+            'no-auto' => ['help'],
+            ...
+        }
+    },
+};
+```
+
+In this example:
+
+- the only automatically added child command is `help` (via option
+  `auto-children`);
+- the `MAIN` command gets the `commands` sub-command too, although
+  explicitly and not implicitly;
+- the `foo` command gets nothing, because `no-auto` filters out *every*
+  implicitly generated sub-command;
+- the `bar` command gets nothing as well, because its `no-auto` filters
+  out the `help` command, which is also the only one that is set.
 
 ## Specification from module
 
@@ -143,8 +201,8 @@ more sub-commands inside a different module, to keep the specification
 and the implementation close to each other, setting the configuration
 `specfetch` to `+SpecFromHashOrModule`:
 
-```
-$app = {
+```perl
+my $app = {
     configuration => { specfetch => '+SpecFromHashOrModule' },
     commands => {
         MAIN => {
@@ -153,7 +211,7 @@ $app = {
         },
         baz => { ... },
     }
-}
+};
 ```
 
 In the example above:
@@ -176,8 +234,8 @@ example no external module will be loaded to figure out the
 specification for child `Some::Foo#whatever`, because the specification
 is already available in `commands`:
 
-```
-$app = {
+```perl
+my $app = {
     configuration => { specfetch => '+SpecFromHashOrModule' },
     commands => {
         MAIN => {
@@ -186,14 +244,135 @@ $app = {
         },
         'Some::Foo#whatever' => { ... },
     }
-}
+};
 ```
 
 It might be even adviseable to use this name structure, actually: it
 allows starting with a compact application definition, while allowing
 for an easy split at a later time if this is the main goal.
 
+## Dispatch: vague relationships
 
+[App::Easer][] supports providing an *executable* associated to key
+`dispatch`, in order to completely override the child search mechanism:
+
+```perl
+my $app = {
+    commands => {
+        MAIN => {
+            children => [qw< foo bar baz >],
+            dispatch => \&random_child,
+            ...
+        },
+        foo => { ... },
+        bar => { ... },
+        baz => { ... },
+    },
+};
+
+# ...
+
+sub random_child ($app, $spec, $args) {
+    my @children = $spec->{chidren}->@*;
+    return $children[rand @children];
+}
+```
+
+The example above is a bit crude but shows that the
+`dispatch`-associated function is supposed to return the name of a
+command. The example uses `children` to choose from, but it can actually
+be any valid command:
+
+```perl
+my $app = {
+    commands => {
+        MAIN => {
+            children => [qw< bar baz >],
+            dispatch => sub { return 'foo' }, # not a child, but OK!
+            ...
+        },
+        foo => { ... },
+        bar => { ... },
+        baz => { ... },
+    },
+};
+```
+
+It is possible for `dispatch` to return `undef`. In this case, no other
+command will be selected, but the (intermediate) command's own `execute`
+slot will be considered instead, as a form of *auto-dispatching*.
+
+If option `dispatch` is actually needed... this is probably a failure in
+[App::Easer][]'s model.
+
+## Marking a favourite child
+
+It's not fair of parents to have preferences, but sub-commands don't
+bother and parent commands can indeed have a preference.
+
+As an example, an intermediate command `sql` might have two
+sub-commands `select` and `delete`:
+
+
+```
+$ myapp sql select foo bar and baz
+
+$ myapp sql delete baz
+```
+
+If command `select` is the mostly used one, it might be interesting to
+just skip writing it completely, with the following interface:
+
+```
+# alias for myapp sql select foo bar and baz
+$ myapp sql foo bar and baz
+```
+
+This is possible by marking a *fallback* child, in case the search for a
+child does not produce a result. It's possible to specify a *fallback*
+in several ways:
+
+- `fallback-to`: sets the name of the child directly;
+- `fallback-to-default`: sets the name of the child to be the same as
+  `default-child`;
+- `fallback`: points to an *executable* that allows getting back the
+  name of a *fallback* child.
+
+In the latter case, the signature of the executable is as follows:
+
+```perl
+sub my_fallback ($app, $spec, $args) { ... }
+```
+
+where:
+
+- `$app` is the global object tracking the application;
+- `$spec` is the specification of the command;
+- `$args` are command-line arguments.
+
+The configuratio built so far from parents are all available in array
+`$app->{configs}`; `$app->{configs}[-1]` is the one from the command
+itself, which will be the parent of the command that is returned.
+
+It is possible for `fallback-to` and `fallback` to return `undef`. In
+this case, no child will be selected, but the (intermediate) command's
+own `execute` slot will be considered instead, as a form of
+*auto-dispatching*.
+
+
+## Marking a default child
+
+When an intermediate command is called without additional command-line
+arguments... it's usually a strange situation, at least if intermediate
+commands are supposed to be *intermediate-only*.
+
+To cope with this possibility, [App::Easer][] allows setting
+`default-child`, either at the higher `configuration` level, or inside a
+single command's specification.
+
+By default, the string `help` will be considered, pointing to the
+associated sub-command. This means that invoking an intermediate command
+will, by default, print the help for that intermediate command.
 
 [App::Easer]: https://metacpan.org/pod/App::Easer
 [Installing Perl Modules]: https://github.polettix.it/ETOOBUSY/2020/01/04/installing-perl-modules/

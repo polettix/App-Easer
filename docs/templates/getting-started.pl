@@ -17,10 +17,6 @@ my $application = {
       # figure out names of environment variables automatically
       'auto-environment' => 1,
 
-      # allow for configuration files
-      sources            => '+SourcesWithFiles',
-      # sources => '+DefaultSources',
-
       # sub-commands without children are leaves (no sub help/commands)
       # 'auto-leaves'    => 1,
 
@@ -35,17 +31,19 @@ my $application = {
       MAIN => {
          help        => 'An application to do X',
          description => 'An application to do X, easily',
+
+         # allow for configuration files
+         sources            => '+SourcesWithFiles',
+         # 'config-files' => ["/etc/$APPNAME.json"],
          options     => [
             {
                getopt      => 'config|c=s',
                help        => 'path to the configuration file',
                environment => 1,
                # default     => "$ENV{HOME}/.$APPNAME.json",
-               # required    => 1,
             },
          ],
-         sources        => '+SourcesWithFiles',
-         # 'config-files' => ["/etc/$APPNAME.json"],
+
          children => [qw< foo bar >],
       },
       foo => {
@@ -57,7 +55,6 @@ my $application = {
                help        => '',
                environment => 1,
                # default     => '',
-               # required    => 1,
             },
          ],
          execute => '#foo',
@@ -71,7 +68,6 @@ my $application = {
                help        => '',
                environment => 1,
                # default     => '',
-               # required    => 1,
             },
          ],
          execute => '#bar',

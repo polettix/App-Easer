@@ -47,7 +47,7 @@ my $app = {
             execute => 'MyApp::Foo',
         }
     }
-}
+};
 ```
 
 By default, [App::Easer][] will look for a function that matches the
@@ -74,7 +74,7 @@ my $app = {
             execute => 'MyApp::Foo#execute_this',
         }
     }
-}
+};
 ```
 
 It is also possible to simplify the specification by setting a prefix
@@ -88,7 +88,7 @@ my $app = {
             execute => '@Foo',
         }
     }
-}
+};
 ```
 
 Try to avoid the `+` prefix because it is already used by
@@ -104,7 +104,7 @@ my $app = {
             execute => '@Foo#execute_this',
         }
     }
-}
+};
 ```
 
 
@@ -120,13 +120,13 @@ my $app = {
         specfetch => '+SpecFromHashOrModule',
         ...
     }
-}
+};
 ```
 
 To trigger loading the command specification from an external module,
 set the `children` with hints to get the specification, e.g.:
 
-```
+```perl
 my $app = {
     ...
     commands => {
@@ -135,7 +135,7 @@ my $app = {
             ...
         },
     }
-}
+};
 ```
 
 In the examples above, sub-command `foo` is defined inside `MyApp::Foo`,
