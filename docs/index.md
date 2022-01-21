@@ -20,9 +20,9 @@ Available tutorials:
 - [Getting Started][]
 - [Cookbook][]
 - [Defining commands hierarchy][]
+- [Command options][]
 
 <!--
-- [Options: definition and collection][]
 - [Partitioning code into multiple files][]
 - [Help system][]
 -->
@@ -34,6 +34,6 @@ Available tutorials:
 [Getting Started]: {{ '/docs/01-getting-started.html' | relative_url }}
 [Cookbook]: {{ '/docs/02-cookbook.html' | relative_url }}
 [Defining commands hierarchy]: {{ '/docs/03-commands-hierarchy.html' | relative_url }}
-[Options: definition and collection]: {{ '/docs/04-options-definition-collection.html' | relative_url }}
+[Command options]: {{ '/docs/04-command-options.html' | relative_url }}
 [Partitioning code into multiple files]: {{ '/docs/05-code-partitioning.html' | relative_url }}
 [Help system]: {{ '/docs/06-help-system.html' | relative_url }}

@@ -172,7 +172,7 @@ sub default_getopt_config ($self, $spec) {
    my @r = qw< gnu_getopt >;
    push @r, qw< require_order pass_through >
       if scalar get_children($self, $spec);
-   push @r, qw< pass_thorugh > if  $spec->{'allow-residual_options'};
+   push @r, qw< pass_through > if  $spec->{'allow-residual-options'};
    return \@r;
 }
 
@@ -527,7 +527,7 @@ sub sources ($self, $spec, $args) {
 
 sub stock_CmdLine ($self, $spec, $args) {
    my @args = $args->@*;
-   my $goc  = $spec->{getopt_config}
+   my $goc  = $spec->{'getopt-config'}
      // default_getopt_config($self, $spec);
    require Getopt::Long;
    Getopt::Long::Configure('default', $goc->@*);
