@@ -470,10 +470,15 @@ sub print_help ($self, $target) {
    }
 }
 
-sub stock_SpecFromHash ($s, $cmd) { $s->{application}{commands}{$cmd} }
+sub stock_SpecFromHash ($s, $cmd) {
+   return $cmd if ref($cmd) eq 'HASH';
+   return $s->{application}{commands}{$cmd} // undef;
+}
 
 sub stock_SpecFromHashOrModule ($s, $cmd) {
-   $s->{application}{commands}{$cmd} //= $s->{factory}->($cmd, 'spec')->();
+   return $cmd if ref($cmd) eq 'HASH';
+   return $s->{application}{commands}{$cmd}
+      //= $s->{factory}->($cmd, 'spec')->();
 }
 
 sub fetch_spec_for ($self, $command) {
