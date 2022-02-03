@@ -3,7 +3,7 @@ use v5.24;
 use warnings;
 use experimental qw< signatures >;
 no warnings qw< experimental::signatures >;
-{ our $VERSION = '0.010' }
+{ our $VERSION = '0.011' }
 
 use Exporter 'import';
 our @EXPORT_OK = qw< d run >;

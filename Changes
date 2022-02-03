@@ -1,5 +1,8 @@
 {{$NEXT}}
 
+0.011  2022-02-03 23:58:16 CET
+   - Add support for nested children
+
 0.010  2022-01-21 20:27:52 CET
    - Fix typo bugs
    - Small fix in example
