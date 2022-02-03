@@ -171,7 +171,7 @@ sub d (@stuff) {
 sub default_getopt_config ($self, $spec) {
    my @r = qw< gnu_getopt >;
    push @r, qw< require_order pass_through >
-      if scalar get_children($self, $spec);
+      if has_children($self, $spec);
    push @r, qw< pass_through > if  $spec->{'allow-residual-options'};
    return \@r;
 }
