@@ -418,10 +418,10 @@ also be set locally in a command.
 
 =head2 Commands Specifications
 
-All commands are stored in a hash of hashes, where the key represents an
+Commands are stored in a hash of hashes, where the key represents an
 internal I<identifier> for the command, which is then used to build the
 hierarchy (each command can have a C<children> element where these
-identifier are listed).
+identifier are listed, or direct definitions for some of the children).
 
 The command definition is a hash with the following shape:
 
@@ -446,7 +446,7 @@ The command definition is a hash with the following shape:
    commit:   «executable»
    execute:  «executable»
 
-   children: ['foo.bar', 'baz']
+   children: ['foo.bar', 'baz', {...}]
    default-child: 'foo.bar'
    dispatch: «executable»
    fallback: «executable»
@@ -553,12 +553,15 @@ Calling convention:
 =item C<children>
 
 This is a list of children, i.e. allowed sub-commands, specified by
-their identifier in the C<commands> hash. This list is normally enriched
-with sub-commands C<help> and C<commands> automatically, unless the
-automatic children have been changed or disabled. It is possible to mark
-a command as a I<leaf> (missing also sub-commands C<help>/C<commands>)
-by setting this parameter to a false value, otherwise it must be an
-array;
+their identifier in the C<commands> hash or as hash-references which
+contain the definition of the children themselves (they can be
+intermixed).
+
+This list is normally enriched with sub-commands C<help> and C<commands>
+automatically, unless the automatic children have been changed or
+disabled. It is possible to mark a command as a I<leaf> (missing also
+sub-commands C<help>/C<commands>) by setting this parameter to a false
+value, otherwise it must be an array.
 
 =item C<default-child>
 
@@ -568,7 +571,10 @@ overridden. Setting this to a false value disables looking for a
 sub-command, so it allows addressing the command itself directly.
 
 This must be the key associated to a child in the C<commands> mapping,
-i.e. the same name that is put in the C<children> array.
+i.e. the same name that is put in the C<children> array. It can also be
+optionally provided as a reference to a hash with one single key
+C<index>, whose associated value must be an integer indexing inside the
+array of children.
 
 =item C<dispatch>
 
@@ -643,6 +649,10 @@ current command's C<execute> should be used instead.
 C<fallback-to-default> selects whatever default is set for the command;
 it is a boolean-ish option.
 
+In all cases, when the set/returned value is a reference to a hash that
+contains only the key C<index> pointing to an integer, this is assumed
+to point to an element inside the children array reference and used as
+such.
 
 =item C<leaf>
 
