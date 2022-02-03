@@ -24,7 +24,7 @@ my $app = {
                default     => 'buzz',
             },
          ],
-         'default-child' => 'my-name-is-bar',
+         'default-child' => {index => 1},
          children => [
             {
                help        => 'sub-command foo',
@@ -97,6 +97,13 @@ subtest 'bar help (help is ignored)' => sub {
 subtest 'bar as default' => sub {
    test_run($app, [], {}, 'bar')->no_exceptions->result_is('Bar')
      ->stdout_like(qr{bar on out})->stderr_like(qr{bar on err});
+};
+
+$app->{commands}{MAIN}{'default-child'}{index} = 0;
+
+subtest 'foo as default' => sub {
+   test_run($app, [], {}, 'foo')->no_exceptions->result_is('Foo')
+     ->stdout_like(qr{foo on out})->stderr_like(qr{foo on err});
 };
 
 done_testing();
