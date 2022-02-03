@@ -43,6 +43,16 @@ sub stdout_like ($self, $regex, $name = 'stdout') {
    return $self;
 }
 
+sub diag_stdout ($self) {
+   diag $self->{stdout};
+   return $self;
+}
+
+sub diag_stderr ($self) {
+   diag $self->{stderr};
+   return $self;
+}
+
 sub stderr_like ($self, $regex, $name = 'stderr') {
    like $self->{stderr} // '', $regex, $name;
    return $self;
