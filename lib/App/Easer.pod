@@ -865,6 +865,8 @@ C<undef> if no command can be found.
 
 =head2 fetch_subcommand
 
+=head2 fetch_subcommand_wh
+
 =head2 generate_factory
 
 =head2 get_child

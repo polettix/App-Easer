@@ -365,10 +365,10 @@ also be set locally in a command.
 
 ## Commands Specifications
 
-All commands are stored in a hash of hashes, where the key represents an
+Commands are stored in a hash of hashes, where the key represents an
 internal _identifier_ for the command, which is then used to build the
 hierarchy (each command can have a `children` element where these
-identifier are listed).
+identifier are listed, or direct definitions for some of the children).
 
 The command definition is a hash with the following shape:
 
@@ -393,7 +393,7 @@ The command definition is a hash with the following shape:
     commit:   «executable»
     execute:  «executable»
 
-    children: ['foo.bar', 'baz']
+    children: ['foo.bar', 'baz', {...}]
     default-child: 'foo.bar'
     dispatch: «executable»
     fallback: «executable»
@@ -495,12 +495,15 @@ The following keys are supported:
 - `children`
 
     This is a list of children, i.e. allowed sub-commands, specified by
-    their identifier in the `commands` hash. This list is normally enriched
-    with sub-commands `help` and `commands` automatically, unless the
-    automatic children have been changed or disabled. It is possible to mark
-    a command as a _leaf_ (missing also sub-commands `help`/`commands`)
-    by setting this parameter to a false value, otherwise it must be an
-    array;
+    their identifier in the `commands` hash or as hash-references which
+    contain the definition of the children themselves (they can be
+    intermixed).
+
+    This list is normally enriched with sub-commands `help` and `commands`
+    automatically, unless the automatic children have been changed or
+    disabled. It is possible to mark a command as a _leaf_ (missing also
+    sub-commands `help`/`commands`) by setting this parameter to a false
+    value, otherwise it must be an array.
 
 - `default-child`
 
@@ -510,7 +513,10 @@ The following keys are supported:
     sub-command, so it allows addressing the command itself directly.
 
     This must be the key associated to a child in the `commands` mapping,
-    i.e. the same name that is put in the `children` array.
+    i.e. the same name that is put in the `children` array. It can also be
+    optionally provided as a reference to a hash with one single key
+    `index`, whose associated value must be an integer indexing inside the
+    array of children.
 
 - `dispatch`
 
@@ -582,6 +588,11 @@ The following keys are supported:
 
     `fallback-to-default` selects whatever default is set for the command;
     it is a boolean-ish option.
+
+    In all cases, when the set/returned value is a reference to a hash that
+    contains only the key `index` pointing to an integer, this is assumed
+    to point to an element inside the children array reference and used as
+    such.
 
 - `leaf`
 
