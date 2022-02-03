@@ -195,6 +195,21 @@ sub fetch_subcommand_default ($self, $spec) {
 }
 
 sub fetch_subcommand ($self, $spec, $args) {
+   my ($subc, $alias) = fetch_subcommand_wh($self, $spec, $args)
+      or return;
+   my $r = ref $subc;
+   if ($r eq 'HASH') {
+      $subc = $spec->{children}[$subc->{index}]
+         if scalar(keys $subc->%*) == 1 && defined $subc->{index};
+      $r = ref $subc;
+      return ($subc, $subc->{supports}[0]) if $r eq 'HASH';
+      $alias = $subc;
+   }
+   die "invalid sub-command (ref to $r)" if $r;
+   return ($subc, $alias);
+}
+
+sub fetch_subcommand_wh ($self, $spec, $args) {
    # if there's a dispatch, use that to figure out where to go next
    # **this** might even overcome having children at all!
    for my $cfg ($spec, $self->{application}{configuration}) {
@@ -236,7 +251,7 @@ sub fetch_subcommand ($self, $spec, $args) {
    shift @names;    # remove first one
    my $path = join '/', @names, $args->[0]; # $args->[0] was the candidate
    die "cannot find sub-command '$path'\n";
-} ## end sub fetch_subcommand
+} ## end sub fetch_subcommand_wh
 
 sub generate_factory ($c) {
    my $w = \&stock_factory;    # default factory
