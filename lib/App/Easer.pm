@@ -270,7 +270,43 @@ sub get_child ($self, $spec, $name) {
    return;
 } ## end sub get_child
 
-sub get_children ($self, $spec) {
+sub stock_ChildrenByPrefix ($self, $spec, @prefixes) {
+   require File::Spec;
+   my @expanded_inc = map {
+      my ($v, $dirs) = File::Spec->splitpath($_, 'no-file');
+      [$v, File::Spec->splitdir($dirs)];
+   } @INC;
+   my %seen;
+   return map {
+      my @parts = split m{::}mxs, $_ . 'x';
+      substr(my $bprefix = pop @parts, -1, 1, '');
+      map {
+         my ($v, @dirs) = $_->@*;
+         my $dirs = File::Spec->catdir(@dirs, @parts);
+         if (opendir my $dh, File::Spec->catpath($v, $dirs, '')) {
+            grep { ! $seen{$_}++ }
+            map {
+               substr(my $lastpart = $_, -3, 3, '');
+               join '::', @parts, $lastpart;
+            } grep {
+               my $path = File::Spec->catpath($v, $dirs, $_);
+               (-e $path && ! -d $path)
+               && substr($_, 0, length($bprefix)) eq $bprefix
+               && substr($_, -3, 3) eq '.pm'
+            } readdir $dh;
+         }
+         else { () }
+      } @expanded_inc;
+   } @prefixes;
+}
+
+sub expand_children ($self, $spec, $child_spec) {
+   return $child_spec unless ref($child_spec) eq 'ARRAY';
+   my ($exe, @args) = $child_spec->@*;
+   return $self->{factory}->($exe, 'children')->($self, $spec, @args);
+}
+
+sub get_children ($self, $spec, $expand = 1) {
    return if $spec->{leaf};
    return if exists($spec->{children}) && !$spec->{children};
    my @children = ($spec->{children} // [])->@*;
@@ -282,6 +318,11 @@ sub get_children ($self, $spec) {
    return
      if $self->{application}{configuration}{'auto-leaves'}
      && @children == 0;    # no auto-children for leaves under auto-leaves
+
+   # skip expansion if $expand is false (default is expand)
+   @children = map { expand_children($self, $spec, $_) } @children
+      if $expand;
+
    my @auto =
      exists $self->{application}{configuration}{'auto-children'}
      ? (($self->{application}{configuration}{'auto-children'} // [])->@*)
@@ -319,7 +360,7 @@ sub get_descendant ($self, $start, $list) {
    die "cannot find sub-command '$path'\n";
 } ## end sub get_descendant
 
-sub has_children ($self, $spec) { get_children($self, $spec) ? 1 : 0 }
+sub has_children ($self, $spec) { get_children($self, $spec, 0) ? 1 : 0 }
 
 sub hash_merge {
    my (%retval, %is_overridable);
