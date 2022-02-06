@@ -2,7 +2,7 @@ package LocalTester;
 use v5.24;
 use experimental 'signatures';
 use Capture::Tiny 'capture';
-use App::Easer;
+use App::Easer 'run';
 use Test::More;
 use Exporter 'import';
 
@@ -31,7 +31,7 @@ sub test_run ($app, $args, $env, $command = 'MAIN') {
          else { delete $ENV{$k} }
       }
       $self->@{qw< stdout stderr result >} = capture {
-         scalar App::Easer::run($app, $args)
+         scalar run($app, $args)
       };
       1;
    } or do { $self->{exception} = $@ };

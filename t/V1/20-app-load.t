@@ -7,7 +7,7 @@ use lib dirname(__FILE__);
 use Helpers 'tpath';
 
 use App::Easer;
-my $loader = \&App::Easer::load_application;
+my $loader = \&App::Easer::V1::load_application;
 
 my $target = {what => 'ever'};
 

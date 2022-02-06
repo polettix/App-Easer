@@ -17,7 +17,7 @@ use App::Easer;
    sub thefunc { return __PACKAGE__ }
 }
 
-my $factory = App::Easer::generate_factory(
+my $factory = App::Easer::V1::generate_factory(
    {
       prefixes => {
          '/'  => 'This#',
@@ -46,7 +46,7 @@ is $factory->(
 )->(), 'hashref', 'hash reference as executable';
 
 my $sub1 = $factory->('+help', '');
-my $sub2 = \&App::Easer::stock_help;
+my $sub2 = \&App::Easer::V1::stock_help;
 is "$sub1", "$sub2", 'prefix + to get stock functions';
 
 for my $error (['This', 'whatever'], ['Inexistent#function', '']) {

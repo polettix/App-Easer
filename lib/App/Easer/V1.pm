@@ -1,20 +1,12 @@
-package App::Easer;
+package App::Easer::V1;
 use v5.24;
 use warnings;
 use experimental qw< signatures >;
 no warnings qw< experimental::signatures >;
 { our $VERSION = '0.011' }
 
-sub import ($package, @args) {
-   my $api = 'V1'; # default
-   $api = uc(shift @args) if @args && $args[0] =~ m{\A V\d+ \z}imxs;
-   require "App/Easer/$api.pm";
-   "App::Easer::$api"->export_to_level(1, $package, @args);
-}
-
-1;
-
-__END__
+use parent 'Exporter';
+our @EXPORT_OK = qw< d run appeaser_api >;
 
 sub add_auto_commands ($application) {
    my $commands = $application->{commands};
@@ -38,6 +30,8 @@ sub add_auto_commands ($application) {
    };
    return $application;
 } ## end sub add_auto_commands ($application)
+
+sub appeaser_api { return 'V1' }
 
 sub collect ($self, $spec, $args) {
    my @sequence;
@@ -685,7 +679,7 @@ sub stock_factory ($executable, $default_subname = '', $opts = {}) {
           !defined $opts->{prefixes}       ? ()
         : 'ARRAY' eq ref $opts->{prefixes} ? ($opts->{prefixes}->@*)
         :                                    ($opts->{prefixes});
-      push @prefixes, {'+' => 'App::Easer#stock_'};
+      push @prefixes, {'+' => 'App::Easer::V1#stock_'};
     SEARCH:
       for my $expansion_for (@prefixes) {
          for my $p (keys $expansion_for->%*) {
