@@ -314,9 +314,9 @@ sub source_ParentHash ($self, $keys, @ignore) {
 # version where it's clear where each option comes from, to allow for
 # further injection of parameters from elsewhere.
 sub config_hash ($self, $blame = 0) {
-   my $config = $self->_rwn('config');
+   my $config = $self->_rwn('config') // {};
    return $config if $blame;
-   return $config->{merged};
+   return $config->{merged} // {};
 }
 
 # get one or more specific configurtion values
@@ -449,6 +449,8 @@ sub load_module ($sop, $module) {
 # sub "baz" in "Foo::Bar". If no package name is set, returns a
 # reference to a sub in the package of $self. FIXME document properly
 sub ref_to_sub ($self, $spec) {
+   Carp::confess("undefined specification in ref_to_sub")
+      unless defined $spec;
    return $spec if ref($spec) eq 'CODE';
    my ($class, $function) =
      ref($spec) eq 'ARRAY'
@@ -491,7 +493,11 @@ sub fallback ($self) {
 } ## end sub fallback ($self)
 
 # execute what's set as the execute sub in the slot
-sub execute ($self) { $self->ref_to_sub($self->_rw)->($self) }
+sub execute ($self) {
+   my $spec = $self->_rw or die "nothing to search for execution\n";
+   my $sub = $self->ref_to_sub($spec) or die "nothing to execute\n";
+   return $sub->($self);
+}
 
 sub run ($self, $name, @args) {
    $self->call_name($name);
