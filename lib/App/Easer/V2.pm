@@ -323,7 +323,12 @@ sub config_hash ($self, $blame = 0) {
 sub config ($self, @keys) { $self->config_hash(0)->@{@keys} }
 
 # commit collected options values, called after collect ends
-sub commit ($self) { return $self }
+sub commit ($self, @n) {
+   my $commit = $self->_rw(@n);
+   return $commit if @n;
+   return unless $commit;
+   return $self->ref_to_sub($commit)->($self);
+}
 
 # validate collected options values, called after commit ends.
 sub validate ($self) {
