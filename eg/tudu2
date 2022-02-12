@@ -3,14 +3,25 @@ use v5.24;
 use warnings;
 use experimental 'signatures';
 no warnings 'experimental::signatures';
-use App::Easer V2 => 'run';
 
-my $application = {
-   name => $0,
-   aliases => [$0],
-   help    => 'to-do application',
+exit(TuDu->new->run($0, @ARGV) // 0);
+
+package TuDu;
+use Path::Tiny 'path';
+use App::Easer::V2 -command => -spec => {
+   help        => 'to-do application',
    description => 'A simple to-do application',
-   options     => [
+
+   # this is not needed strictly speaking, but comes handy if this gets
+   # integrated within a higher level command
+   aliases => [qw< tudu todo >],
+
+   # as a top-level command, the sources also include configuration files
+   sources => [
+      qw< +Default +CmdLine +Environment +JsonFileFromConfig >,
+      ['+JsonFiles', "$ENV{HOME}/.tudu.conf", '/etc/tudu.conf'],
+   ],
+   options => [
       {
          help        => 'path to the configuration file',
          getopt      => 'config|c=s',
@@ -23,17 +34,15 @@ my $application = {
          default     => "$ENV{HOME}/.tudu",
       },
       {
-         help   => 'max number of attempts to find non-colliding id',
-         getopt => 'attempts|max-attempts|M=i',
+         help    => 'max number of attempts to find non-colliding id',
+         getopt  => 'attempts|max-attempts|M=i',
          default => 9,
       },
    ],
-   sources        => [
-      qw< +Default +CmdLine +Environment +JsonFileFromConfig >,
-      [ '+JsonFiles', "$ENV{HOME}/.tudu.conf", '/etc/tudu.conf' ],
-   ],
-   commit         => 'TuDu::ensure_basedir',
-   children => [
+
+   # Class used for all children commands, specified as hashes
+   hashy_class => 'TuDu::Command',
+   children    => [
       {
          aliases     => [qw< list ls >],
          description => 'Get full or partial list of tasks',
@@ -70,7 +79,7 @@ my $application = {
                getopt => 'n=i'
             },
          ],
-         execute => 'TuDu::list',
+         execute => 'cmd_list',
       },
       {
          aliases     => [qw< add new post >],
@@ -88,19 +97,19 @@ my $application = {
                default     => 'vi',
             }
          ],
-         execute => 'TuDu::add',
+         execute => 'cmd_add',
       },
       {
          aliases     => [qw< show print get >],
          help        => 'print one task',
          description => 'Print one whole task',
-         execute     => 'TuDu::show',
+         execute     => 'cmd_show',
       },
       {
          aliases     => [qw< cat >],
          help        => 'print one task (no delimiters)',
          description => 'Print one whole task, without adding delimiters',
-         execute     => 'TuDu::cat',
+         execute     => 'cmd_cat',
       },
       {
          aliases     => [qw< edit modify change update >],
@@ -114,55 +123,88 @@ my $application = {
                default     => 'vi',
             }
          ],
-         execute => 'TuDu::edit',
+         execute => 'cmd_edit',
       },
       {
-         execute     => 'TuDu::done',
+         aliases     => [qw< done tick yay >],
          help        => 'mark a task as completed',
          description => 'Archive a task as completed',
-         aliases     => [qw< done tick yay >],
+         execute     => 'cmd_done',
       },
       {
          aliases     => [qw< waiting wait >],
          help        => 'mark a task as waiting',
          description => 'Set a task as waiting for external action',
-         execute     => 'TuDu::waiting',
+         execute     => 'cmd_waiting',
       },
       {
          aliases     => [qw< resume active restart ongoing >],
          help        => 'mark a task as ongoing',
          description => 'Set a task in active mode (from done or waiting)',
-         execute     => 'TuDu::resume',
+         execute     => 'cmd_ongoing',
       },
       {
          aliases     => [qw< remove rm delete del >],
          help        => 'delete a task',
          description => 'Get rid of a task (definitively)',
-         execute     => 'TuDu::remove',
+         execute     => 'cmd_remove',
       },
    ],
 };
-exit(run($application, $0, @ARGV) // 0);
 
-
-package TuDu;
-use Path::Tiny 'path';
-use POSIX 'strftime';
-
-sub ensure_basedir ($cmd) {
-   my $path = path($cmd->config('basedir'));
+# commit the configuration by ensuring that the basedir exists and has
+# the right structure.
+sub commit ($self) {
+   my $path = path($self->config('basedir'));
    $path->mkpath;
    $path->child($_)->mkpath for qw< ongoing waiting done >;
    return;
-} ## end sub ensure_basedir
+} ## end sub commit ($self)
 
-sub list_category ($config, $category) {
-   my $dir = path($config->{basedir})->child($category);
-   return reverse sort { $a cmp $b } $dir->children;
+package TuDu::Command;
+use Path::Tiny 'path';
+use POSIX 'strftime';
+use App::Easer::V2 '-command';
+
+
+########################################################################
+# Command methods
+
+sub cmd_add ($self) {
+   my $id = strftime('%Y%m%d-%H%M%S', localtime);
+   my $category = $self->config('waiting') ? 'waiting' : 'ongoing';
+   my $hint = $self->basedir->child($category, $id);
+   my $target = $self->add_file($hint, '');
+   if (my @args = $self->residual_args) {
+      $target->spew_utf8(join(' ', @args) . "\n");
+      return 0;
+   }
+   return 0
+     if $self->edit_file($target) && length $self->get_title($target);
+   $target->remove if -e $target;
+   $self->fatal("bailing out creating new task");
+} ## end sub add ($self)
+
+sub cmd_cat ($self) {
+   print {*STDOUT} $self->resolve->slurp_utf8;
+   return 0;
 }
 
-sub list ($cmd) {
-   my $config = $cmd->config_hash;
+sub cmd_done ($self) {
+   $self->move_task;
+}
+
+sub cmd_edit ($self) {
+   my $target   = $self->resolve;
+   my $previous = $target->slurp_utf8;
+   return 0
+     if $self->edit_file($target) && length $self->get_title($target);
+   $target->spew_utf8($previous);
+   $self->fatal("bailing out editing task");
+} ## end sub edit ($self)
+
+sub cmd_list ($self) {
+   my $config = $self->config_hash;
 
    my @active = qw< ongoing waiting >;
    my @candidates = (@active, 'done');
@@ -187,70 +229,51 @@ sub list ($cmd) {
         if exists $config->{$option} && !$config->{$option};
    }
 
-   my $basedir = path($config->{basedir});
+   my $basedir = $self->basedir;
    my (%cf, %pf);
    my $limit = $config->{n};
    for my $source (@candidates) {
       next unless $included{$source};
-      for my $file (list_category($config, $source)) {
-         my $title = get_title($file);
+      for my $file ($self->list_category($source)) {
+         my $title = $self->get_title($file);
          my $sid = $config->{id} ? '-' . $file->basename : ++$cf{$source};
          my $id = substr($source, 0, 1) . $sid;
          say "$id [$source] $title";
          last if $limit && ++$pf{$source} >= $limit;
-      } ## end for my $file (list_category...)
+      } ## end for my $file ($self->list_category...)
    } ## end for my $source (@candidates)
 
    return 0;
-} ## end sub list
+} ## end sub list ($self)
 
-sub resolve ($config, $oid, @rest) {
-   fatal("no identifier provided") unless defined $oid;
-   fatal("too many identifiers provided") if @rest;
-   my $id = $oid;
+sub cmd_ongoing ($self) {
+   $self->move_task;
+}
 
-   my %name_for = (o => 'ongoing', d => 'done', w => 'waiting');
-   my $first = substr $id, 0, 1, '';
-   my $type = $name_for{$first} // fatal("invalid identifier '$oid'");
+sub cmd_remove ($self) {
+   $self->resolve->remove;
+   return 0;
+}
 
-   my $child;
-   if ($id =~ s{\A -}{}mxs) {    # exact id
-      $child = path($config->{basedir})->child($type, $id);
-      fatal("unknown identifier '$oid'") unless -r $child;
-   }
-   else {
-      fatal("invalid identifier '$oid'")
-        unless $id =~ m{\A [1-9]\d* \z}mxs;
-      my @children = list_category($config, $type);
-      fatal(
-"invalid identifier '$oid' (too high, max $first@{[scalar @children]})"
-      ) if $id > @children;
-      $child = $children[$id - 1];
-   } ## end else [ if ($id =~ s{\A -}{}mxs)]
-
-   return $child;
-} ## end sub resolve
-
-sub show ($cmd) {
-   my $child = resolve($cmd->config_hash, $cmd->residual_args);
-   my $contents = $child->slurp_utf8;
+sub cmd_show ($self) {
+   my $contents = $self->resolve->slurp_utf8;
    $contents =~ s{\n\z}{}mxs;
    say "----\n$contents\n----";
    return 0;
-} ## end sub show
+} ## end sub show ($self)
 
-sub cat ($cmd) {
-   my $child = resolve($cmd->config_hash, $cmd->residual_args);
-   print {*STDOUT} $child->slurp_utf8;
-   return 0;
-} ## end sub show
+sub cmd_waiting ($self) {
+   $self->move_task;
+}
 
-sub fatal ($message) { die join(' ', @_) . "\n" }
-sub notice ($message) { warn join(' ', @_) . "\n" }
 
-sub add_file ($config, $hint, $contents) {
-   my $attempts = 0;
-   my $file     = path($hint);
+########################################################################
+# Support methods
+
+sub add_file ($self, $hint, $contents) {
+   my $attempts         = 0;
+   my $file             = path($hint);
+   my $allowed_attempts = $self->config('attempts');
    while ('necessary') {
       eval {
          my $fh =
@@ -259,68 +282,81 @@ sub add_file ($config, $hint, $contents) {
          close $fh;
       } && return $file;
       ++$attempts;
-      last if $config->{attempts} && $attempts >= $config->{attempts};
+      last if $allowed_attempts && $attempts >= $allowed_attempts;
       $file = $hint->sibling($hint->basename . "-$attempts");
    } ## end while ('necessary')
-   fatal("cannot save file '$hint' or variants");
+   $self->fatal("cannot save file '$hint' or variants");
 } ## end sub add_file
 
-sub move_task ($cmd, $category) {
-   my $config = $cmd->config_hash;
-   my $child = resolve($config, $cmd->residual_args);
-   my $parent = $child->parent;
-   if ($parent->basename eq $category) {
-      notice("task is already $category");
-      return 0;
-   }
-   my $dest = $parent->sibling($category)->child($child->basename);
-   add_file($config, $dest, $child->slurp_utf8);
-   $child->remove;
-   return 0;
-} ## end sub move_task
-
-sub done    ($cmd) { move_task($cmd, 'done')    }
-sub resume  ($cmd) { move_task($cmd, 'ongoing') }
-sub waiting ($cmd) { move_task($cmd, 'waiting') }
-
-sub remove ($cmd) {
-   resolve($cmd->config_hash, $cmd->residual_args)->remove;
-   return 0;
+sub basedir ($self) {
+   return path($self->config('basedir'));
 }
 
-sub get_title ($path) {
-   my ($title) = $path->lines({count => 1});
-   ($title // '') =~ s{\A\s+|\s+\z}{}grmxs;
-}
-
-sub add ($cmd) {
-   my $config = $cmd->config_hash;
-   my @args = $cmd->residual_args;
-   my $id = strftime('%Y%m%d-%H%M%S', localtime);
-   my $category = $config->{waiting} ? 'waiting' : 'ongoing';
-   my $hint = path($config->{basedir})->child($category, $id);
-   my $target = add_file($config, $hint, '');
-   if (@args) {
-      $target->spew_utf8(join(' ', @args) . "\n");
-      return 0;
-   }
-   return 0 if edit_file($config, $target) && length get_title($target);
-   $target->remove if -e $target;
-   fatal("bailing out creating new task");
-} ## end sub add
-
-sub edit_file ($config, $path) {
-   my $editor = $config->{editor};
+sub edit_file ($self, $path) {
+   my $editor = $self->config('editor');
    my $outcome = system {$editor} $editor, $path->stringify;
    return $outcome == 0;
 }
 
-sub edit ($main, $config, $args) {
-   my $target = resolve($config, $cmd->residual_args);
-   my $previous = $target->slurp_utf8;
-   return 0 if edit_file($config, $target) && length get_title($target);
-   $target->spew_utf8($previous);
-   fatal("bailing out editing task");
+sub fatal ($self, @message) {
+   die join(' ', @message) . "\n";
 }
+
+sub get_title ($self, $path) {
+   my ($title) = $path->lines({count => 1});
+   ($title // '') =~ s{\A\s+|\s+\z}{}grmxs;
+}
+
+sub list_category ($self, $category) {
+   my $dir = $self->basedir->child($category);
+   return reverse sort { $a cmp $b } $dir->children;
+}
+
+sub move_task ($self) {
+   my $category = (caller(1))[3] =~ s{\A cmd_}{}rmxs;
+   my $child  = $self->resolve;
+   my $parent = $child->parent;
+   if ($parent->basename eq $category) {
+      $self->notice("task is already $category");
+      return 0;
+   }
+   my $dest = $parent->sibling($category)->child($child->basename);
+   $self->add_file($dest, $child->slurp_utf8);
+   $child->remove;
+   return 0;
+} ## end sub move_task
+
+sub notice ($self, @message) {
+   warn join(' ', @message) . "\n";
+}
+
+sub resolve ($self) {
+   my ($oid, @rest) = $self->residual_args;
+   $self->fatal("no identifier provided") unless defined $oid;
+   $self->fatal("too many identifiers provided") if @rest;
+   my $id = $oid;
+
+   my %name_for = (o => 'ongoing', d => 'done', w => 'waiting');
+   my $first = substr $id, 0, 1, '';
+   my $type = $name_for{$first}
+     // $self->fatal("invalid identifier '$oid'");
+
+   my $child;
+   if ($id =~ s{\A -}{}mxs) {    # exact id
+      $child = $self->basedir->child($type, $id);
+      $self->fatal("unknown identifier '$oid'") unless -r $child;
+   }
+   else {
+      $self->fatal("invalid identifier '$oid'")
+        unless $id =~ m{\A [1-9]\d* \z}mxs;
+      my @children = $self->list_category($type);
+      $self->fatal("invalid identifier '$oid' "
+           . "(too high, max $first@{[scalar @children]})")
+        if $id > @children;
+      $child = $children[$id - 1];
+   } ## end else [ if ($id =~ s{\A -}{}mxs)]
+
+   return $child;
+} ## end sub resolve ($self)
 
 1;
