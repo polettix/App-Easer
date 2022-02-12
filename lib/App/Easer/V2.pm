@@ -92,12 +92,21 @@ sub _rwa ($self, @n) {
    return wantarray ? $aref->@* : [$aref->@*];
 }
 
+sub _rwad ($self, @n) {
+   my $aref = $self->_rwn((caller(1))[3] =~ s{.*::}{}rmxs, @n) // [];
+   return wantarray ? $aref->@* : [$aref->@*];
+}
+
 # these "attributes" would point to stuff that is normally "scalar" and
 # used as specification overall. It can be overridden but probably it's
 # just easier to stick in a hash inside the slot. We don't want to put
 # executables here, though - overriding should be the guiding principle
 # in this case.
-sub aliases ($self, @r) { $self->_rwa(@r) }
+sub aliases ($self, @r) {
+   if (my @aliases = $self->_rwad(@r)) { return @aliases }
+   if (defined(my $name = $self->_rwn('name'))) { return $name }
+   return;
+}
 sub allow_residual_options ($self, @r) { $self->_rw(@r) }
 sub auto_environment ($self, @r) { $self->_rw(@r) }
 sub call_name ($self, @r) { $self->_rw(@r) }
@@ -107,11 +116,12 @@ sub default_child ($self, @r) { $self->_rw(@r) }
 sub description ($self, @r) { $self->_rw(@r) }
 sub environment_prefix ($self, @r) { $self->_rw(@r) }
 sub execution_reason ($self, @r) { $self->_rw(@r) }
+sub force_auto_children ($self, @r) { $self->_rw(@r) }
 sub fallback_to ($self, @r) { $self->_rw(@r) }
 sub hashy_class ($self, @r) { $self->_rw(@r) }
 sub help ($self, @r) { $self->_rw(@r) }
 sub help_channel ($slf, @r) { $slf->_rw(@r) }
-sub name ($self, @r) { $self->_rw(@r) // ($self->aliases)[0] }
+sub name ($s, @r) { $s->_rw(@r) // ($s->aliases)[0] // '**no name**' }
 sub options ($self, @r) { $self->_rwa(@r) }
 sub params_validate ($self, @r) { $self->_rw(@r) }
 sub parent ($self, @r) { $self->_rw(@r) }
@@ -125,6 +135,7 @@ sub supports ($self, $what) {
 sub new ($pkg, @args) {
    my $pkg_spec = do { no strict 'refs'; ${$pkg . '::app_easer_spec'} };
    my $slot = {
+      aliases                => [],
       allow_residual_options => 0,
       auto_environment       => 0,
       children               => [],
@@ -182,10 +193,10 @@ sub collect ($self, @args) {
       push @sequence, [$src, \@opts, $locator, $slice];
       push @slices, $slice;
       $config = $self->merge_hashes(@slices);
+      $self->_rwn(config => {merged => $config, sequence => \@sequence});
    } ## end for my $source ($self->...)
 
    # save and return
-   $self->_rwn(config => {merged => $config, sequence => \@sequence});
    $self->residual_args(\@residual_args);
    return $self;
 } ## end sub collect
@@ -273,7 +284,7 @@ sub source_Environment ($self, @ignore) {
 } ## end sub source_Environment
 
 sub source_JsonFileFromConfig ($self, $key, @ignore) {
-   $key //= 'config';
+   $key = $key->[0] // 'config';
    defined(my $filename = $self->config($key)) or return {};
    require JSON::PP;
    return JSON::PP::decode_json($self->slurp($filename));
@@ -320,7 +331,18 @@ sub config_hash ($self, $blame = 0) {
 }
 
 # get one or more specific configurtion values
-sub config ($self, @keys) { $self->config_hash(0)->@{@keys} }
+sub config ($self, @keys) {
+   my $hash = $self->config_hash(0);
+   return $hash->{$keys[0]} if @keys == 1;
+   return $hash->@{@keys};
+}
+
+sub set_config ($self, $key, @value) {
+   my $hash = $self->config_hash(0);
+   delete $hash->{$key};
+   $hash->{$key} = $value[0] if @value;
+   return $self;
+}
 
 # commit collected options values, called after collect ends
 sub commit ($self, @n) {
@@ -396,7 +418,7 @@ sub find_child ($self) {
 # can be turned into instances via inflate_children. In this case, it's
 # module names
 sub list_children ($self) {
-   my @children = $self->children();
+   my @children = $self->children;
    require File::Spec;
    my @expanded_inc = map {
       my ($v, $dirs) = File::Spec->splitpath($_, 'no-file');
@@ -426,12 +448,14 @@ sub list_children ($self) {
    } $self->children_prefixes;
    push @children, map {
       my $prefix = $_;
+      grep { ! $seen{$_}++ }
       grep {
          my $this_prefix = substr $_, 0, length $prefix;
          $this_prefix eq $prefix;
       } keys %App::Easer::V2::registered;
    } $self->children_prefixes;
-   push @children, $self->auto_children if @children;
+   push @children, $self->auto_children
+      if $self->force_auto_children // @children;
    return @children;
 } ## end sub list_children ($self)
 
@@ -440,8 +464,8 @@ sub auto_children ($self) {
 }
 
 sub load_module ($sop, $module) {
-   my $package = "$module.pm" =~ s{::}{/}grmxs;
-   eval { require $package } or Carp::confess("package<$package>");
+   my $file = "$module.pm" =~ s{::}{/}grmxs;
+   eval { require $file } or Carp::confess("module<$module>");
    return $module;
 }
 
@@ -682,8 +706,9 @@ sub execute ($self) {
       push @stuff, "Description:\n$description\n\n";
    }
 
+   # Print this only for sub-commands, not for the root
    push @stuff, sprintf "Can be called as: %s\n\n", join ', ',
-     $target->aliases;
+     $target->aliases if $target->parent;
 
    if (my @options = $target->options) {
       push @stuff, "Options:\n";
