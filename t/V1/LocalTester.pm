@@ -2,7 +2,7 @@ package LocalTester;
 use v5.24;
 use experimental 'signatures';
 use Capture::Tiny 'capture';
-use App::Easer 'run';
+use App::Easer V1 => 'run';
 use Test::More;
 use Exporter 'import';
 
@@ -16,14 +16,6 @@ sub test_run ($app, $args, $env, $command = 'MAIN') {
       $self->{conf} = $conf;
       $self->{args} = $args;
    };
-#   if (defined $command && exists $app->{commands}{$command}) {
-#      my $inner = $app->{commands}{$command}{execute};
-#      $app->{commands}{$command}{execute} = sub ($main, $conf, $args) {
-#         $self->{conf} = $conf;
-#         $self->{args} = $args;
-#         $main->{factory}->($inner, 'execute')->($main, $conf, $args);
-#      };
-#   }
    eval {
       local @ENV{keys $env->%*};
       while (my ($k, $v) = each $env->%*) {
