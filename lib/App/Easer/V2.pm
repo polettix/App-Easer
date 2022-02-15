@@ -450,7 +450,7 @@ sub list_children ($self) {
                (-e $path && !-d $path)
                  && substr($_, 0,  length($bprefix)) eq $bprefix
                  && substr($_, -3, 3) eq '.pm'
-              } readdir $dh;
+              } sort { $a cmp $b } readdir $dh;
          } ## end if (opendir my $dh, File::Spec...)
          else { () }
       } @expanded_inc;
