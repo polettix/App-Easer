@@ -89,7 +89,7 @@ sub _rw ($s, @n) { $s->_rwn((caller(1))[3] =~ s{.*::}{}rmxs, @n) }
 sub _rwa ($self, @n) {
    my $aref = $self->_rwn((caller(1))[3] =~ s{.*::}{}rmxs, @n);
    Carp::confess() unless defined $aref;
-   return wantarray ? $aref->@* : [$aref->@*];
+   return $aref->@*;
 }
 
 sub _rwad ($self, @n) {
