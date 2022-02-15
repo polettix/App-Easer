@@ -356,7 +356,14 @@ sub commit ($self, @n) {
 sub validate ($self) {
    my $validator = $self->params_validate // return;
    require Params::Validate;
-   Params::Validate::validate($self->config_hash, $validator);
+   if (my $config_validator = $validator->{config} // undef) {
+      my @array = $self->config_hash;
+      Params::Validate::validate(@array, $config_validator);
+   }
+   if (my $args_validator = $validator->{args} // undef) {
+      my @array = $self->residual_args;
+      Params::Validate::validate_pos(@array, $args_validator->@*);
+   }
    return $self;
 } ## end sub validate ($self)
 
