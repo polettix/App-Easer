@@ -406,7 +406,9 @@ sub find_child ($self) {
       return (undef, '-fallback') if $fallback eq '-self';
       return ($self->inflate_default_child, '-default')
         if $fallback eq '-default';
-      return ($self->inflate_children($fallback), -fallback => @residuals);
+      if (my $child = $self->find_matching_child($fallback)) {
+         return ($child, -fallback => @residuals);
+      }
    } ## end if (defined $fallback)
 
    # no fallback at this point... it's an error, build a message and die!
