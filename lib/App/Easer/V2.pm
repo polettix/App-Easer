@@ -536,6 +536,7 @@ sub run ($self, $name, @args) {
    $self->call_name($name);
    $self->collect(@args);
    $self->commit;
+   $self->validate;
    my ($child, @child_args) = $self->find_child;
    return $child->run(@child_args) if defined $child;
    $self->execution_reason($child_args[0]);
