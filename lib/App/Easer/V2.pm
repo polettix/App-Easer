@@ -123,7 +123,6 @@ sub hashy_class ($self, @r) { $self->_rw(@r) }
 sub help ($self, @r) { $self->_rw(@r) }
 sub help_channel ($slf, @r) { $slf->_rw(@r) }
 sub name ($s, @r) { $s->_rw(@r) // ($s->aliases)[0] // '**no name**' }
-sub options ($self, @r) { $self->_rwa(@r) }
 sub params_validate ($self, @r) { $self->_rw(@r) }
 sub parent ($self, @r) { $self->_rw(@r) }
 sub residual_args ($self, @r) { $self->_rwa(@r) }
@@ -131,6 +130,45 @@ sub sources ($self, @r) { $self->_rwa(@r) }
 
 sub supports ($self, $what) {
    any { $_ eq $what } $self->aliases;
+}
+
+sub options ($self, @r) {
+   return map { $self->resolve_options($_) } $self->_rwa(@r);
+}
+
+sub resolve_options ($self, $spec) {
+   return $spec if ref($spec) eq 'HASH';
+   $spec = [ inherit_options => $spec ] unless ref $spec;
+   Carp::confess("invalid spec $spec") unless ref($spec) eq 'ARRAY';
+   my ($method_name, @names) = $spec->@*;
+   my $method = $self->can($method_name)
+      or Carp::confess("cannot find method $method_name in $self");
+   return $self->$method(@names);
+}
+
+sub inherit_options ($self, @names) {
+   my %got;
+   map {
+      my @options;
+      if ($_ eq '+parent') {
+         @options = grep { $_->{transmit} // 0 } $self->parent->options;
+      }
+      else {
+         my $namerx = qr{\A(?:$_)\z};
+         my $ancestor = $self->parent;
+         while ($ancestor) {
+            push @options, my @pass =
+               grep {
+                  my $name = $self->name_for_option($_);
+                  (! $_->{transmit_exact})
+                  && $name =~ m{$namerx}
+                  && ! $got{$name};
+               } $ancestor->options;
+            $ancestor = $ancestor->parent;
+         }
+      }
+      map { +{ transmit => 1, $_->%*, inherited => 1} } @options;
+   } @names;
 }
 
 sub new ($pkg, @args) {
@@ -186,7 +224,7 @@ sub collect ($self, @args) {
 
    for my $source ($self->sources) {
       my ($src, @opts) = ref($source) eq 'ARRAY' ? $source->@* : $source;
-      my $locator = $src =~ s{\A \+}{source_}rmxs;
+      my $locator = ref($src) ? $src : $src =~ s{\A \+}{source_}rmxs;
       my $sub     = $self->ref_to_sub($locator)
         or die "unhandled source for $locator\n";
       my ($slice, $residuals) = $sub->($self, \@opts, \@args);
@@ -252,7 +290,8 @@ sub name_for_option ($self, $o) {
 sub source_Default ($self, @ignore) {
    return {
       map { '//=' . $self->name_for_option($_) => $_->{default} }
-      grep { exists $_->{default} } $self->options
+      grep { exists $_->{default} }
+      grep { ! $_->{inherited} } $self->options
    };
 } ## end sub source_Default
 
@@ -280,7 +319,7 @@ sub source_Environment ($self, @ignore) {
            && exists($ENV{$en})
            ? ($self->name_for_option($_) => $ENV{$en})
            : ();
-      } $self->options
+      } grep { ! $_->{inherited} } $self->options
    };
 } ## end sub source_Environment
 
