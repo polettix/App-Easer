@@ -68,6 +68,7 @@ sub import ($package, @args) {
 package App::Easer::V2::Command;
 use Scalar::Util 'blessed';
 use List::Util 'any';
+use English '-no_match_vars';
 
 # some stuff can be managed via a hash reference kept in a "slot",
 # allowing for overriding should be easy either with re-defining the
@@ -474,7 +475,7 @@ sub auto_children ($self) {
 
 sub load_module ($sop, $module) {
    my $file = "$module.pm" =~ s{::}{/}grmxs;
-   eval { require $file } or Carp::confess("module<$module>");
+   eval { require $file } or Carp::confess("module<$module>: $EVAL_ERROR");
    return $module;
 }
 
