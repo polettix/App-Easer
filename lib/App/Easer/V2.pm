@@ -509,7 +509,7 @@ sub list_children ($self) {
 } ## end sub list_children ($self)
 
 sub auto_children ($self) {
-   return map { __PACKAGE__ . '::' . $_ } qw< Help Commands >;
+   return map { __PACKAGE__ . '::' . $_ } qw< Help Commands Tree >;
 }
 
 sub load_module ($sop, $module) {
@@ -801,5 +801,37 @@ sub execute ($self) {
    $self->printout(@stuff);
    return;
 } ## end sub execute ($self)
+
+package App::Easer::V2::Command::Tree;
+push our @ISA, 'App::Easer::V2::Command::Commands';
+sub aliases                { 'tree' }
+sub description            { 'Print tree of supported sub-commands' }
+sub help                   { 'print sub-commands in a tree' }
+sub name                   { 'tree' }
+sub options {
+   return (
+      {
+         getopt => 'include_auto|include-auto|I!',
+         default => 0,
+         environment => 1,
+      },
+   );
+}
+
+sub list_commands ($self, $target) {
+   my $exclude_auto = $self->config('include_auto') ? 0 : 1;
+   my @lines;
+   for my $command ($target->inflate_children($target->list_children)) {
+      my ($name) = $command->aliases or next;
+      next if $name =~ m{\A(?: help | commands | tree)\z}mxs && $exclude_auto;
+      my $help    = $command->help // '(**missing help**)';
+      push @lines, sprintf '- %s (%s)', $name, $help;
+      if (defined(my $subtree = $self->list_commands($command))) {
+         push @lines, $subtree =~ s{^}{  }rgmxs;
+      }
+   } ## end for my $command ($target...)
+   return unless @lines;
+   return join "\n", @lines;
+}
 
 1;
