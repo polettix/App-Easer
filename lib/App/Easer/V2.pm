@@ -138,13 +138,13 @@ sub options ($self, @r) {
 
 sub resolve_options ($self, $spec) {
    return $spec if ref($spec) eq 'HASH';
-   $spec = [ inherit_options => $spec ] unless ref $spec;
+   $spec = [inherit_options => $spec] unless ref $spec;
    Carp::confess("invalid spec $spec") unless ref($spec) eq 'ARRAY';
    my ($method_name, @names) = $spec->@*;
    my $method = $self->can($method_name)
-      or Carp::confess("cannot find method $method_name in $self");
+     or Carp::confess("cannot find method $method_name in $self");
    return $self->$method(@names);
-}
+} ## end sub resolve_options
 
 sub inherit_options ($self, @names) {
    my %got;
@@ -154,22 +154,22 @@ sub inherit_options ($self, @names) {
          @options = grep { $_->{transmit} // 0 } $self->parent->options;
       }
       else {
-         my $namerx = qr{\A(?:$_)\z};
+         my $namerx   = qr{\A(?:$_)\z};
          my $ancestor = $self->parent;
          while ($ancestor) {
             push @options, my @pass =
-               grep {
-                  my $name = $self->name_for_option($_);
-                  (! $_->{transmit_exact})
-                  && $name =~ m{$namerx}
-                  && ! $got{$name};
-               } $ancestor->options;
+              grep {
+               my $name = $self->name_for_option($_);
+               (!$_->{transmit_exact})
+                 && $name =~ m{$namerx}
+                 && !$got{$name};
+              } $ancestor->options;
             $ancestor = $ancestor->parent;
-         }
-      }
-      map { +{ transmit => 1, $_->%*, inherited => 1} } @options;
+         } ## end while ($ancestor)
+      } ## end else [ if ($_ eq '+parent') ]
+      map { +{transmit => 1, $_->%*, inherited => 1} } @options;
    } @names;
-}
+} ## end sub inherit_options
 
 sub new ($pkg, @args) {
    my $pkg_spec = do { no strict 'refs'; ${$pkg . '::app_easer_spec'} };
@@ -225,7 +225,7 @@ sub collect ($self, @args) {
    for my $source ($self->sources) {
       my ($src, @opts) = ref($source) eq 'ARRAY' ? $source->@* : $source;
       my $locator = ref($src) ? $src : $src =~ s{\A \+}{source_}rmxs;
-      my $sub     = $self->ref_to_sub($locator)
+      my $sub = $self->ref_to_sub($locator)
         or die "unhandled source for $locator\n";
       my ($slice, $residuals) = $sub->($self, \@opts, \@args);
       push @residual_args, $residuals->@* if defined $residuals;
@@ -291,7 +291,7 @@ sub source_Default ($self, @ignore) {
    return {
       map { '//=' . $self->name_for_option($_) => $_->{default} }
       grep { exists $_->{default} }
-      grep { ! $_->{inherited} } $self->options
+      grep { !$_->{inherited} } $self->options
    };
 } ## end sub source_Default
 
@@ -319,7 +319,7 @@ sub source_Environment ($self, @ignore) {
            && exists($ENV{$en})
            ? ($self->name_for_option($_) => $ENV{$en})
            : ();
-      } grep { ! $_->{inherited} } $self->options
+      } grep { !$_->{inherited} } $self->options
    };
 } ## end sub source_Environment
 
@@ -382,7 +382,7 @@ sub set_config ($self, $key, @value) {
    delete $hash->{$key};
    $hash->{$key} = $value[0] if @value;
    return $self;
-}
+} ## end sub set_config
 
 # commit collected options values, called after collect ends
 sub commit ($self, @n) {
@@ -390,7 +390,7 @@ sub commit ($self, @n) {
    return $commit if @n;
    return unless $commit;
    return $self->ref_to_sub($commit)->($self);
-}
+} ## end sub commit
 
 # validate collected options values, called after commit ends.
 sub validate ($self) {
@@ -497,14 +497,14 @@ sub list_children ($self) {
    } $self->children_prefixes;
    push @children, map {
       my $prefix = $_;
-      grep { ! $seen{$_}++ }
-      grep {
+      grep { !$seen{$_}++ }
+        grep {
          my $this_prefix = substr $_, 0, length $prefix;
          $this_prefix eq $prefix;
-      } keys %App::Easer::V2::registered;
+        } keys %App::Easer::V2::registered;
    } $self->children_prefixes;
    push @children, $self->auto_children
-      if $self->force_auto_children // @children;
+     if $self->force_auto_children // @children;
    return @children;
 } ## end sub list_children ($self)
 
@@ -523,7 +523,7 @@ sub load_module ($sop, $module) {
 # reference to a sub in the package of $self. FIXME document properly
 sub ref_to_sub ($self, $spec) {
    Carp::confess("undefined specification in ref_to_sub")
-      unless defined $spec;
+     unless defined $spec;
    return $spec if ref($spec) eq 'CODE';
    my ($class, $function) =
      ref($spec) eq 'ARRAY'
@@ -758,7 +758,8 @@ sub execute ($self) {
 
    # Print this only for sub-commands, not for the root
    push @stuff, sprintf "Can be called as: %s\n\n", join ', ',
-     $target->aliases if $target->parent;
+     $target->aliases
+     if $target->parent;
 
    if (my @options = $target->options) {
       push @stuff, "Options:\n";
@@ -804,27 +805,29 @@ sub execute ($self) {
 
 package App::Easer::V2::Command::Tree;
 push our @ISA, 'App::Easer::V2::Command::Commands';
-sub aliases                { 'tree' }
-sub description            { 'Print tree of supported sub-commands' }
-sub help                   { 'print sub-commands in a tree' }
-sub name                   { 'tree' }
+sub aliases     { 'tree' }
+sub description { 'Print tree of supported sub-commands' }
+sub help        { 'print sub-commands in a tree' }
+sub name        { 'tree' }
+
 sub options {
    return (
       {
-         getopt => 'include_auto|include-auto|I!',
-         default => 0,
+         getopt      => 'include_auto|include-auto|I!',
+         default     => 0,
          environment => 1,
       },
    );
-}
+} ## end sub options
 
 sub list_commands ($self, $target) {
    my $exclude_auto = $self->config('include_auto') ? 0 : 1;
    my @lines;
    for my $command ($target->inflate_children($target->list_children)) {
       my ($name) = $command->aliases or next;
-      next if $name =~ m{\A(?: help | commands | tree)\z}mxs && $exclude_auto;
-      my $help    = $command->help // '(**missing help**)';
+      next
+        if $name =~ m{\A(?: help | commands | tree)\z}mxs && $exclude_auto;
+      my $help = $command->help // '(**missing help**)';
       push @lines, sprintf '- %s (%s)', $name, $help;
       if (defined(my $subtree = $self->list_commands($command))) {
          push @lines, $subtree =~ s{^}{  }rgmxs;
@@ -832,6 +835,6 @@ sub list_commands ($self, $target) {
    } ## end for my $command ($target...)
    return unless @lines;
    return join "\n", @lines;
-}
+} ## end sub list_commands
 
 1;

@@ -55,9 +55,13 @@
       "App::Easer" : {
          "file" : "lib/App/Easer.pm",
          "version" : "0.011"
+      },
+      "App::Easer::V1" : {
+         "file" : "lib/App/Easer/V1.pm",
+         "version" : "0.011"
       }
    },
-   "release_status" : "testing",
+   "release_status" : "stable",
    "resources" : {
       "bugtracker" : {
          "web" : "https://github.com/polettix/App-Easer/issues"
