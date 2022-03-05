@@ -508,9 +508,22 @@ sub list_children ($self) {
    return @children;
 } ## end sub list_children ($self)
 
-sub auto_children ($self) {
-   return map { __PACKAGE__ . '::' . $_ } qw< Help Commands Tree >;
+sub auto_child ($self, $name, $inflate = 0) {
+   my $child = __PACKAGE__ . '::' . ucfirst(lc($name));
+   ($child) = $self->inflate_children($child) if $inflate;
+   return $child;
 }
+
+# returns either class names or inflated objects
+sub auto_children ($self, $inflate = 0) {
+   map { $self->auto_child($_, $inflate) } qw< help commands tree >;
+}
+
+sub auto_commands ($self) { return $self->auto_child('commands', 1) }
+
+sub auto_help ($self) { return $self->auto_child('help', 1) }
+
+sub auto_tree ($self) { return $self->auto_child('tree', 1) }
 
 sub load_module ($sop, $module) {
    my $file = "$module.pm" =~ s{::}{/}grmxs;

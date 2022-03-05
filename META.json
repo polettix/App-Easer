@@ -59,6 +59,26 @@
       "App::Easer::V1" : {
          "file" : "lib/App/Easer/V1.pm",
          "version" : "0.011"
+      },
+      "App::Easer::V2" : {
+         "file" : "lib/App/Easer/V2.pm",
+         "version" : "0.011"
+      },
+      "App::Easer::V2::Command" : {
+         "file" : "lib/App/Easer/V2.pm",
+         "version" : "0.011"
+      },
+      "App::Easer::V2::Command::Commands" : {
+         "file" : "lib/App/Easer/V2.pm",
+         "version" : "0.011"
+      },
+      "App::Easer::V2::Command::Help" : {
+         "file" : "lib/App/Easer/V2.pm",
+         "version" : "0.011"
+      },
+      "App::Easer::V2::Command::Tree" : {
+         "file" : "lib/App/Easer/V2.pm",
+         "version" : "0.011"
       }
    },
    "release_status" : "stable",
