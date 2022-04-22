@@ -166,7 +166,7 @@ subtest 'foo baz (source from sub-hash, not default)' => sub {
    )->no_exceptions->result_is('BAZ')->conf_contains(
       {
          foo  => 0,
-         bar  => 'from_substuff',
+         bar  => 'from_general_configuration_file',
          hey  => 'you',
          last => 42
       }
