@@ -295,6 +295,22 @@ sub source_Default ($self, @ignore) {
    };
 } ## end sub source_Default
 
+sub source_FromTrail ($self, $trail, @ignore) {
+   my $conf = $self->config_hash;
+   for my $key ($trail->@*) {
+      return {} unless defined $conf->{$key};
+      $conf = $conf->{$key};
+      die "invalid trail $trail->@* for configuration gathering"
+        unless ref($conf) eq 'HASH';
+   } ## end for my $key ($keys->@*)
+   return $conf;
+}
+
+sub source_DefaultFromTrail ($self, $trail, @ignore) {
+   my $conf = $self->source_FromTrail($trail);
+   return { map { '//=' . $_ => $conf->{$_} } keys $conf->%* };
+}
+
 sub environment_variable_name ($self, $ospec) {
    my $env =
        exists $ospec->{environment} ? $ospec->{environment}
@@ -349,16 +365,6 @@ sub source_Parent ($self, @ignore) {
    return $parent->config_hash(0);
 }
 
-sub source_ParentHash ($self, $keys, @ignore) {
-   my $conf = $self->source_parent;
-   for my $key ($keys->@*) {
-      return {} unless exists $conf->{$key};
-      $conf = $conf->{$key};
-      die "invalid trail $keys->@* for configuration gathering"
-        unless ref($conf) eq 'HASH';
-   } ## end for my $key ($keys->@*)
-   return $conf;
-} ## end sub source_ParentHash
 
 # get the assembled config for the command. It supports the optional
 # additional boolean parameter $blame to get back a more structured
@@ -525,6 +531,9 @@ sub auto_help ($self) { return $self->auto_child('help', 1) }
 
 sub auto_tree ($self) { return $self->auto_child('tree', 1) }
 
+sub run_help ($self) { return $self->auto_help->run($self->name) }
+sub full_help_text ($s) { return $s->auto_help->collect_help_for($s) }
+
 sub load_module ($sop, $module) {
    my $file = "$module.pm" =~ s{::}{/}grmxs;
    eval { require $file } or Carp::confess("module<$module>: $EVAL_ERROR");
@@ -613,7 +622,7 @@ sub target ($self) {
    return $target;
 } ## end sub target ($self)
 
-sub list_commands ($self, $target = undef) {
+sub list_commands_for ($self, $target = undef) {
    $target //= $self->target;
    my @lines;
    for my $command ($target->inflate_children($target->list_children)) {
@@ -626,7 +635,7 @@ sub list_commands ($self, $target = undef) {
    } ## end for my $command ($target...)
    return unless @lines;
    return join "\n", @lines;
-} ## end sub list_commands
+} ## end sub list_commands_for
 
 sub printout ($self, @stuff) {
    my ($channel, $binmode) = split m{:}mxs, $self->help_channel, 2;
@@ -649,7 +658,7 @@ sub printout ($self, @stuff) {
 sub execute ($self) {
    my $target = $self->target;
    my $name   = $target->call_name // $target->name;
-   if (defined(my $commands = $self->list_commands($target))) {
+   if (defined(my $commands = $self->list_commands_for($target))) {
       $self->printout("sub-commands for $name\n", $commands, "\n");
    }
    else {
@@ -665,7 +674,7 @@ sub description            { 'Print help for (sub)command' }
 sub help                   { 'print a help command' }
 sub name                   { 'help' }
 
-sub commandline_help ($getopt) {
+sub __commandline_help ($getopt) {
    my @retval;
 
    my ($mode, $type, $desttype, $min, $max, $default);
@@ -755,10 +764,15 @@ sub commandline_help ($getopt) {
    } ## end else [ if ($type eq 'bool') ]
 
    return @retval;
-} ## end sub commandline_help ($getopt)
+} ## end sub __commandline_help ($getopt)
 
 sub execute ($self) {
-   my $target = $self->target;
+   $self->printout($self->collect_help_for($self->target));
+   return 0;
+}
+
+sub collect_help_for ($self, $target = undef) {
+   $target //= $self->target;
    my @stuff;
 
    push @stuff, $target->help, "\n\n";
@@ -784,7 +798,7 @@ sub execute ($self) {
            $opt->{help} // '';
 
          if (exists $opt->{getopt}) {
-            my @lines = commandline_help($opt->{getopt});
+            my @lines = __commandline_help($opt->{getopt});
             push @stuff, sprintf "%15s  command-line: %s\n", '',
               shift(@lines);
             push @stuff,
@@ -806,14 +820,14 @@ sub execute ($self) {
       push @stuff, "This command has no option\n";
    }
 
-   if (defined(my $commands = $self->list_commands($target))) {
+   if (defined(my $commands = $self->list_commands_for($target))) {
       push @stuff, "Sub-commands:\n", $commands, "\n";
    }
    else {
       push @stuff, "No sub-commands\n";
    }
-   $self->printout(@stuff);
-   return;
+
+   return join '', @stuff;
 } ## end sub execute ($self)
 
 package App::Easer::V2::Command::Tree;
@@ -833,7 +847,7 @@ sub options {
    );
 } ## end sub options
 
-sub list_commands ($self, $target) {
+sub list_commands_for ($self, $target) {
    my $exclude_auto = $self->config('include_auto') ? 0 : 1;
    my @lines;
    for my $command ($target->inflate_children($target->list_children)) {
@@ -842,12 +856,12 @@ sub list_commands ($self, $target) {
         if $name =~ m{\A(?: help | commands | tree)\z}mxs && $exclude_auto;
       my $help = $command->help // '(**missing help**)';
       push @lines, sprintf '- %s (%s)', $name, $help;
-      if (defined(my $subtree = $self->list_commands($command))) {
+      if (defined(my $subtree = $self->list_commands_for($command))) {
          push @lines, $subtree =~ s{^}{  }rgmxs;
       }
    } ## end for my $command ($target...)
    return unless @lines;
    return join "\n", @lines;
-} ## end sub list_commands
+} ## end sub list_commands_for
 
 1;

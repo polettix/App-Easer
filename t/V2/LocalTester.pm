@@ -55,6 +55,12 @@ sub conf_is ($self, $expected, $name = 'configuration') {
    return $self;
 }
 
+sub conf_contains ($self, $expected, $name = 'partial configuration') {
+   my $got = { map { $_ => $self->{conf}{$_} } keys $expected->%* };
+   is_deeply $got, $expected, $name;
+   return $self;
+}
+
 sub args_are ($self, $expected, $name = 'residual arguments') {
    is_deeply $self->{args}, $expected, $name;
    return $self;
