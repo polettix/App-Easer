@@ -147,6 +147,58 @@ App::Easer::V2 allows also to leverage both aspects at the same time for
 the same command, e.g. setting some parts through a hash reference and
 other parts with overriding methods.
 
+
+=head1 MIXED STUFF
+
+=head2 Managing help as a command-line option
+
+To get C<help> about a command, App::Easer::V2 provides a C<help>
+sub-command out of the box I<most of the times>. The exception is for
+I<leaf> commands, which do not have sub-commands.
+
+This is not a big deal with hierarchical applications, because it's
+possible to invoke the C<help> sub-command of the parent command and
+pass the name of the sub-command we need help with:
+
+   # print help about `topcmd`
+   $ topcmd help
+
+   # print help about `subcmd` under `topcmd`
+   $ topcmd help subcmd
+
+On the other hand, for non-hierarchical applications, the only available
+command is also a leaf and this hinders getting a meaningful,
+auto-generated help text off the shelf.
+
+In this case, it's possible to include an option for getting help, like
+this:
+
+   my $app = {
+      options => [
+         {
+            getopt => 'help|h!',
+            help   => 'print help on the command',
+         },
+         ...
+
+Then, inside the C<execute> sub, it's possible to I<run> the C<help>
+sub-command explicitly:
+
+   sub execute ($self) {
+      return $self->run_help if $self->config('help');
+
+      # ... normal code for "execute"
+      # ...
+   }
+
+
+
+
+
+
+
+
+
 =head2 Application High Level View
 
 The following YAML representation gives a view of the structure of an
