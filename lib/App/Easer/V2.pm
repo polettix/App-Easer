@@ -28,7 +28,7 @@ sub run ($app, @args) {
    my $class = 'App::Easer::V2::Command';
    my $instance =
        ref($app) eq 'HASH'  ? $class->new($app)
-     : ref($app) eq 'array' ? $class->instantiate($app->@*)
+     : ref($app) eq 'ARRAY' ? $class->instantiate($app->@*)
      :                        $class->instantiate($app);
    return $instance->run(@args);
 } ## end sub run
@@ -157,7 +157,7 @@ sub inherit_options ($self, @names) {
          my $namerx   = qr{\A(?:$_)\z};
          my $ancestor = $self->parent;
          while ($ancestor) {
-            push @options, my @pass =
+            push @options, my @pass =  # FIXME something's strange here
               grep {
                my $name = $self->name_for_option($_);
                (!$_->{transmit_exact})
@@ -182,11 +182,12 @@ sub new ($pkg, @args) {
       default_child          => 'help',
       environment_prefix     => '',
       fallback_to            => undef,
+      force_auto_children    => undef,
       hashy_class            => __PACKAGE__,
       help_channel           => '-STDOUT:encoding(UTF-8)',
       options                => [],
       params_validate        => undef,
-      sources => [qw< +Default +CmdLine +Environment +Parent >],
+      sources => [qw< +CmdLine +Environment +Parent +Default >],
       ($pkg_spec // {})->%*,
       (@args && ref $args[0] ? $args[0]->%* : @args),
    };
@@ -222,16 +223,27 @@ sub collect ($self, @args) {
    my $config = {};      # merged configuration
    my @residual_args;    # what is left from the @args at the end
 
+   my $last_priority = 0;
    for my $source ($self->sources) {
-      my ($src, @opts) = ref($source) eq 'ARRAY' ? $source->@* : $source;
-      my $locator = ref($src) ? $src : $src =~ s{\A \+}{source_}rmxs;
+      my ($src, $meta, @opts) = ref($source) eq 'ARRAY' ? $source->@* : $source;
+      $meta //= {};
+      my $locator = $src;
+      if (! ref($src)) {
+         ($src, my $priority) = split m{=}mxs, $src;
+         $meta->{priority} = $priority if defined $priority;
+         $locator = $src =~ s{\A \+}{source_}rmxs;
+      }
       my $sub = $self->ref_to_sub($locator)
         or die "unhandled source for $locator\n";
       my ($slice, $residuals) = $sub->($self, \@opts, \@args);
       push @residual_args, $residuals->@* if defined $residuals;
-      push @sequence, [$src, \@opts, $locator, $slice];
-      push @slices, $slice;
-      $config = $self->merge_hashes(@slices);
+      $last_priority = my $priority = $meta->{priority} //= $last_priority + 10;
+      push @sequence, [$priority, $src, \@opts, $locator, $slice];
+      for (my $i = $#sequence; $i > 0; --$i) {
+         last if $sequence[$i - 1][0] <= $sequence[$i][0];
+         @sequence[$i - 1, $i] = @sequence[$i, $i - 1];
+      }
+      $config = $self->merge_hashes(map {$_->[-1]} @sequence);
       $self->_rwn(config => {merged => $config, sequence => \@sequence});
    } ## end for my $source ($self->...)
 
@@ -422,7 +434,7 @@ sub find_matching_child ($self, $command) {
    return;
 } ## end sub find_matching_child
 
-sub inflate_default_child ($self) {
+sub _inflate_default_child ($self) {
    defined(my $default = $self->default_child)
      or die "undefined default child\n";
    return undef if $default eq '-self';
@@ -436,11 +448,11 @@ sub inflate_default_child ($self) {
 # something). This implements the most sensible default, deviations will
 # have to be coded explicitly.
 # Return values:
-# - ('-leaf', undef) if no suitable child found
-# - ('-default', $instance) if the default child is returned
-# - (string, $instance) where $string is the specific alias
-#   used, in case a child is found
-# - ('-fallback', $instance) in case the fallback is returned
+# - (undef, '-leaf') if no child exists
+# - ($instance, @args) if a child is found with $args[0]
+# - ($instance, '-default') if the default child is returned
+# - (undef, '-fallback') in case $self is the fallback
+# - ($instance, '-fallback', @args) in case the fallback is returned
 sub find_child ($self) {
    my @candidates = $self->list_children or return (undef, '-leaf');
    my @residuals = $self->residual_args;
@@ -450,14 +462,14 @@ sub find_child ($self) {
       }    # otherwise... see what the fallback is about
    }
    elsif (defined(my $default = $self->default_child)) {
-      return ($self->inflate_default_child, '-default');
+      return ($self->_inflate_default_child, '-default');
    }
 
    # try the fallback...
    my $fallback = $self->fallback;
    if (defined $fallback) {
       return (undef, '-fallback') if $fallback eq '-self';
-      return ($self->inflate_default_child, '-default')
+      return ($self->_inflate_default_child, '-default')
         if $fallback eq '-default';
       if (my $child = $self->find_matching_child($fallback)) {
          return ($child, -fallback => @residuals);
@@ -514,7 +526,7 @@ sub list_children ($self) {
    return @children;
 } ## end sub list_children ($self)
 
-sub auto_child ($self, $name, $inflate = 0) {
+sub _auto_child ($self, $name, $inflate = 0) {
    my $child = __PACKAGE__ . '::' . ucfirst(lc($name));
    ($child) = $self->inflate_children($child) if $inflate;
    return $child;
@@ -522,14 +534,14 @@ sub auto_child ($self, $name, $inflate = 0) {
 
 # returns either class names or inflated objects
 sub auto_children ($self, $inflate = 0) {
-   map { $self->auto_child($_, $inflate) } qw< help commands tree >;
+   map { $self->_auto_child($_, $inflate) } qw< help commands tree >;
 }
 
-sub auto_commands ($self) { return $self->auto_child('commands', 1) }
+sub auto_commands ($self) { return $self->_auto_child('commands', 1) }
 
-sub auto_help ($self) { return $self->auto_child('help', 1) }
+sub auto_help ($self) { return $self->_auto_child('help', 1) }
 
-sub auto_tree ($self) { return $self->auto_child('tree', 1) }
+sub auto_tree ($self) { return $self->_auto_child('tree', 1) }
 
 sub run_help ($self) { return $self->auto_help->run($self->name) }
 sub full_help_text ($s) { return $s->auto_help->collect_help_for($s) }
@@ -580,8 +592,7 @@ sub inflate_children ($self, @hints) {
 # fallback mechanism when finding a child, relies on fallback_to.
 sub fallback ($self) {
    my $fto = $self->fallback_to;
-   return $fto
-     if !defined($fto) || ref($fto) || $fto !~ m{\A(?: 0 | [1-9]\d* )\z};
+   return $fto if !defined($fto) || $fto !~ m{\A(?: 0 | [1-9]\d* )\z};
    my @children = $self->list_children;
    return $children[$fto] if $fto <= $#children;
    return undef;
@@ -637,23 +648,49 @@ sub list_commands_for ($self, $target = undef) {
    return join "\n", @lines;
 } ## end sub list_commands_for
 
-sub printout ($self, @stuff) {
-   my ($channel, $binmode) = split m{:}mxs, $self->help_channel, 2;
+sub help_channel ($self) { $self->target->help_channel }
+
+sub _build_printout_facility ($self) {
+   my $channel = $self->help_channel;
+   my $refch = ref $channel;
+
+   return $channel if $refch eq 'CODE';
+
    my $fh;
-   if ($channel eq '-' || lc($channel) eq '-stdout') {
-      $fh = \*STDOUT;
+   if ($refch eq 'GLOB') {
+      $fh = $channel;
    }
-   elsif (lc($channel) eq '-stderr') {
-      $fh = \*STDERR;
+   elsif ($refch eq 'SCALAR') {
+      open $fh, '>', $channel or die "open(): $!\n";
+   }
+   elsif ($refch) {
+      die 'invalid channel';
    }
    else {
-      open my $ofh, '>', $channel or die "open('$channel'): $!\n";
-      $fh = $ofh;
+      ($channel, my $binmode) = split m{:}mxs, $channel, 2;
+      if ($channel eq '-' || lc($channel) eq '-stdout') {
+         $fh = \*STDOUT;
+      }
+      elsif (lc($channel) eq '-stderr') {
+         $fh = \*STDERR;
+      }
+      else {
+         open $fh, '>', $channel or die "open('$channel'): $!\n";
+      }
+      binmode $fh, $binmode if length($binmode // '');
    }
-   binmode $fh, $binmode if length($binmode // '');
-   print {$fh} @stuff;
-   return;
-} ## end sub printout
+
+   return sub ($cmd, @stuff) {
+      print {$fh} @stuff;
+      return $cmd;
+   }
+}
+
+sub printout ($self, @stuff) {
+   my $pof = $self->_rw;
+   $self->_rw($pof = $self->_build_printout_facility) unless $pof;
+   $pof->($self, @stuff);
+}
 
 sub execute ($self) {
    my $target = $self->target;

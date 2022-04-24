@@ -103,7 +103,7 @@ subtest 'foo baz (tests conf_contains works)' => sub {
 
 $app->{sources} = [
    qw< +Default +CmdLine +Environment +JsonFileFromConfig >,
-   [ '+DefaultFromTrail' => qw< defaults foo baz > ],
+   [ '+DefaultFromTrail' => undef, qw< defaults foo baz > ],
    '+Parent',
 ];
 
@@ -151,7 +151,7 @@ subtest 'foo baz (source from sub-hash, .3.json)' => sub {
 $app->{sources} = [
    qw< +Default +CmdLine +Environment +JsonFileFromConfig >,
    '+Parent',
-   [ '+FromTrail' => qw< defaults foo baz > ],
+   [ '+FromTrail' => undef, qw< defaults foo baz > ],
 ];
 
 subtest 'foo baz (source from sub-hash, not default)' => sub {
