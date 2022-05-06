@@ -187,7 +187,7 @@ sub new ($pkg, @args) {
       help_channel           => '-STDOUT:encoding(UTF-8)',
       options                => [],
       params_validate        => undef,
-      sources => [qw< +CmdLine +Environment +Parent +Default >],
+      sources => [qw< +CmdLine +Environment +Parent=70 +Default=100 >],
       ($pkg_spec // {})->%*,
       (@args && ref $args[0] ? $args[0]->%* : @args),
    };
@@ -201,11 +201,6 @@ sub merge_hashes ($self, @hrefs) {
       for my $src_key (keys $href->%*) {
          my $dst_key          = $src_key;
          my $this_overridable = 0;
-         if ($dst_key =~ m{\A //= (.*) \z}mxs) {    # overridable
-            $dst_key = $1;
-            $is_overridable{$dst_key} = 1 unless exists $retval{$dst_key};
-            $this_overridable = 1;
-         }
          $retval{$dst_key} = $href->{$src_key}
            if $is_overridable{$dst_key} || !exists($retval{$dst_key});
          $is_overridable{$dst_key} = 0 unless $this_overridable;
@@ -225,8 +220,8 @@ sub collect ($self, @args) {
 
    my $last_priority = 0;
    for my $source ($self->sources) {
-      my ($src, $meta, @opts) = ref($source) eq 'ARRAY' ? $source->@* : $source;
-      $meta //= {};
+      my ($src, @opts) = ref($source) eq 'ARRAY' ? $source->@* : $source;
+      my $meta = (@opts && ref $opts[0]) ? shift @opts : {};
       my $locator = $src;
       if (! ref($src)) {
          ($src, my $priority) = split m{=}mxs, $src;
@@ -301,7 +296,7 @@ sub name_for_option ($self, $o) {
 
 sub source_Default ($self, @ignore) {
    return {
-      map { '//=' . $self->name_for_option($_) => $_->{default} }
+      map { $self->name_for_option($_) => $_->{default} }
       grep { exists $_->{default} }
       grep { !$_->{inherited} } $self->options
    };
@@ -316,11 +311,6 @@ sub source_FromTrail ($self, $trail, @ignore) {
         unless ref($conf) eq 'HASH';
    } ## end for my $key ($keys->@*)
    return $conf;
-}
-
-sub source_DefaultFromTrail ($self, $trail, @ignore) {
-   my $conf = $self->source_FromTrail($trail);
-   return { map { '//=' . $_ => $conf->{$_} } keys $conf->%* };
 }
 
 sub environment_variable_name ($self, $ospec) {

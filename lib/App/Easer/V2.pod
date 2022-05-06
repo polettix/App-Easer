@@ -1200,34 +1200,38 @@ customized ones.
 Each source can be set either as a C<$locator> string or as an array
 reference with the following structure:
 
-   [ $locator, $meta_options, @args ]
+   [ $locator, @args ]
 
 The C<$locator> can be a reference to a sub, which is used as the source
 itself, or a string that allows getting the source sub to handle the
 specific source. Strings starting with the C<+> character are reserved
 for sources provided by C<App::Easer::V2> out of the box.
 
-The C<$meta_options> can be either C<undef> or a reference to a hash of
-meta-options, like e.g. the C<priority> to use for the source.
-Priorities are considered for assembling the overall configuration. The
-lower the value, the more important the source; this means that, by
-default, an option's value is preferentially taken from the command
-line, then from the environment, then from some same-named value coming
-from a parent command, and the default value is only considered last.
-It's not necessary to set the priority; if missing, it will be assumed
-to be 10 more than the previous one (with the first item starting at
-10).  If C<$locator> is a plain string, it is also possible to set the
-priority directly inside it with C<=NN> (e.g. C<+Default=100>).
+If C<$locator> is a plain string, it is possible to set the priority
+directly inside it with C<=NN> (e.g. C<+Default=100>).  It's not
+necessary to set the priority; if missing, it will be assumed to be 10
+more than the previous one (with the first item starting at 10).
 
-Last, the C<@args> part can provide additional arguments to the specific
-source; its applicability is dependent on the source itself.
+The C<@args> part can provide additional arguments to the specific
+source; its applicability is dependent on the source itself. As the only
+exception, if the I<first> item of C<@args> is a hash reference, it will
+be removed from the array and used to gather additional I<meta-options>
+used directly by C<App::Easer>. At the moment, this is an alternative
+way to set the priority of the specific source using the key
+C<priority>. This means that the following examples are equivalent:
+
+   # priority in source name, like anywhere else
+   [ '+FromTrail=90', qw< defaults foo baz > ],
+
+   # priority in meta-options first-arguments hash reference
+   [ '+FromTrail', {priority => 90}, qw< defaults foo baz > ],
 
 It's not necessary to set the C<sources> explicitly, as by default the
 following configuration is assumed:
 
-   +CmdLine +Environment +Parent +Default
+   +CmdLine +Environment +Parent=70 +Default=100
 
-where the respective priorities are, in order, 10, 20, 30, and 40.
+where the respective priorities are, in order, 10, 20, 70, and 100.
 
 Sources provided out of the box by C<App::Easer::V2> are:
 
