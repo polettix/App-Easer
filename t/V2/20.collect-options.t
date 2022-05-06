@@ -41,7 +41,10 @@ my $app = {
       ['Foo'],
    ],
    sources =>
-     [qw< +Default +CmdLine +Environment +JsonFileFromConfig +Parent >],
+      [
+         qw< +CmdLine +Environment +Parent=70 +Default=100 >, # defaults 
+         '+JsonFileFromConfig=40',
+      ],
 };
 
 subtest 'foo baz 1' => sub {
@@ -101,10 +104,11 @@ subtest 'foo baz (tests conf_contains works)' => sub {
      ->stderr_like(qr{baz on err});
 };
 
+
 $app->{sources} = [
-   qw< +Default +CmdLine +Environment +JsonFileFromConfig >,
-   [ '+DefaultFromTrail' => undef, qw< defaults foo baz > ],
-   '+Parent',
+   qw< +CmdLine +Environment +Parent=70 +Default=100 >, # defaults 
+   '+JsonFileFromConfig=30', # better than +Parent
+   [ '+FromTrail=90', qw< defaults foo baz > ],
 ];
 
 subtest 'foo baz (source from sub-hash)' => sub {
@@ -128,6 +132,12 @@ subtest 'foo baz (source from sub-hash)' => sub {
 };
 
 
+$app->{sources} = [
+   qw< +CmdLine +Environment +Parent=70 +Default=100 >, # defaults 
+   '+JsonFileFromConfig=30', # better than +Parent
+   [ '+FromTrail', {priority => 90}, qw< defaults foo baz > ],
+];
+
 subtest 'foo baz (source from sub-hash, .3.json)' => sub {
    test_run(
       $app,
@@ -149,9 +159,9 @@ subtest 'foo baz (source from sub-hash, .3.json)' => sub {
 };
 
 $app->{sources} = [
-   qw< +Default +CmdLine +Environment +JsonFileFromConfig >,
+   qw< +CmdLine +Environment +Default=100 +JsonFileFromConfig=30 >,
    '+Parent',
-   [ '+FromTrail' => undef, qw< defaults foo baz > ],
+   [ '+FromTrail', qw< defaults foo baz > ],
 ];
 
 subtest 'foo baz (source from sub-hash, not default)' => sub {
