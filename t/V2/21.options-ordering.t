@@ -146,12 +146,18 @@ subtest 'child getting stuff from parent' => sub {
 
 # subvert precedence, make environment win over command-line
 subtest 'parent, Environment over CmdLine' => sub {
+
+   # input arguments for the test run
    my @args = qw< --one cmdline-one --four cmdline-four >;
+
+   # input environment for the test run
    my %env = (
       ONE => 'environment-one',
       TWO => 'environment-two',
       FIVE => 'environment-five',
    );
+
+   # expected output parsed configuration after the test run
    my %conf = (
       one => 'environment-one',
       two => 'environment-two',
@@ -159,9 +165,15 @@ subtest 'parent, Environment over CmdLine' => sub {
       four => 'cmdline-four',
       five => 'environment-five',
    );
+
+   # temporarily override the list of sources and their precedences
    my $save_sources = $app->{sources};
    $app->{sources} = [qw< +CmdLine +Environment=5 +Default=100 >];
-   test_run($app, \@args, \%env, 'parent')->no_exceptions->conf_is(\%conf);
+
+   # run the test
+   test_run($app, \@args, \%env, 'parent')
+      ->no_exceptions
+      ->conf_is(\%conf);
 
    # restore original sources
    $app->{sources} = $save_sources;
