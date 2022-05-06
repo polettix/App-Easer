@@ -160,7 +160,7 @@ subtest 'parent, Environment over CmdLine' => sub {
       five => 'environment-five',
    );
    my $save_sources = $app->{sources};
-   $app->{sources} = [qw< +Environment +CmdLine +Default=100 >];
+   $app->{sources} = [qw< +CmdLine +Environment=5 +Default=100 >];
    test_run($app, \@args, \%env, 'parent')->no_exceptions->conf_is(\%conf);
 
    # restore original sources
