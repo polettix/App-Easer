@@ -1197,20 +1197,29 @@ C<App::Easer> comes with several sources for getting configurations from
 a variety of places, but still leaves the door open to add more
 customized ones.
 
-Each source can be set either as a C<$locator> string or as an array
-reference with the following structure:
+Sources are I<considered> with respect to two different ordering
+methods: their place in the array pointed by key C<sources> and their
+I<priority>. The former sets the order in which data from each source is
+collected, the latter sets the precedence while assembling conflicting
+data from several different sources (lower priorities means higher
+precedence).
+
+Each source can be set either as a C<$locator> (see ahead) or as an
+array reference with the following structure:
 
    [ $locator, @args ]
 
 The C<$locator> can be a reference to a sub, which is used as the source
 itself, or a string that allows getting the source sub to handle the
 specific source. Strings starting with the C<+> character are reserved
-for sources provided by C<App::Easer::V2> out of the box.
+for sources provided by C<App::Easer::V2> natively.
 
-If C<$locator> is a plain string, it is possible to set the priority
+If C<$locator> is a plain string, it is possible to set the I<priority>
 directly inside it with C<=NN> (e.g. C<+Default=100>).  It's not
 necessary to set the priority; if missing, it will be assumed to be 10
-more than the previous one (with the first item starting at 10).
+more than the previous one in the array (with the first item starting at
+10). This also means that, by default, the ordering of sources also
+doubles down as the ordering of precedence.
 
 The C<@args> part can provide additional arguments to the specific
 source; its applicability is dependent on the source itself. As the only
@@ -1297,6 +1306,9 @@ values read from there take precedence over the defaults:
       +CmdLine=10 +Environment=20 +Parent=30 +Default=100
       +JsonFileFromConfig=40
    >];
+
+This is the main reason why the I<priority> has been detached from order
+of appearance.
 
 =head2 Accessing Collected Option Values
 
