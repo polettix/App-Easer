@@ -724,6 +724,8 @@ provided as a reference to an array.
 
 =head2 add_auto_commands
 
+=head2 appeaser_api
+
 =head2 collect
 
 =head2 collect_options
@@ -737,6 +739,8 @@ provided as a reference to an array.
 =head2 env_namer
 
 =head2 execute
+
+=head2 expand_children
 
 =head2 stock_factory
 
@@ -872,6 +876,8 @@ C<undef> if no command can be found.
 =head2 slurp
 
 =head2 sources
+
+=head2 stock_ChildrenByPrefix
 
 =head2 stock_CmdLine
 
