@@ -1,5 +1,10 @@
 {{$NEXT}}
 
+2.001  2022-06-12 21:39:55 CEST
+   - Split into legacy V1 version and new V2 version
+   - Huge refactoring
+   - Added tests
+
 0.011  2022-02-03 23:58:16 CET
    - Add support for nested children
 
