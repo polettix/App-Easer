@@ -197,7 +197,7 @@ use App::Easer::V2 -command => -spec => {
       },
    ],
    default_child     => 'baz',
-   children_prefixes => ['Foo::'],
+   children_prefixes => ['Foo::SubCmd'],
 };
 
 package Bar;
@@ -209,7 +209,7 @@ sub execute ($self) {
    return 'Bar';
 }
 
-package Foo::Baz;
+package Foo::SubCmdBaz;
 use App::Easer::V2 -command => -spec => {
    help        => 'sub-sub-command baz',
    description => 'second-level sub-command baz',
