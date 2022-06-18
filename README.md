@@ -91,7 +91,7 @@ Flavio Poletti <flavio@polettix.it>
 
 # COPYRIGHT AND LICENSE
 
-Copyright 2021,2022 by Flavio Poletti <flavio@polettix.it>
+Copyright 2021, 2022 by Flavio Poletti <flavio@polettix.it>
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
