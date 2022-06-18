@@ -1,5 +1,8 @@
 {{$NEXT}}
 
+2.002  2022-06-18 18:07:12 CEST
+   - release after 194 PASSes on CPAN Testers (thanks!)
+
 2.001001  2022-06-13 21:06:03 CEST
    - Try to (blindly) address an issue with tests in Strawberry Perl
 
