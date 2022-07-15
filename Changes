@@ -1,5 +1,9 @@
 {{$NEXT}}
 
+2.003  2022-07-15 19:44:31 CEST
+   - accept sub reference for validate
+   - test validation, both with Params::Validate and sub ref
+
 2.002  2022-06-18 18:07:12 CEST
    - release after 194 PASSes on CPAN Testers (thanks!)
 
