@@ -26,7 +26,7 @@ my $app = {
 subtest 'help' => sub {
    test_run($app, ['help'], {}, undef)
      ->no_exceptions
-     ->diag_stdout
+     #->diag_stdout
      ->stdout_like(
       qr{(?mxs:^\s* --foo \s*\| \s* --no-foo \s*$)},
       'boolean option with negation')
