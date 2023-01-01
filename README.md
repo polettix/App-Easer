@@ -74,8 +74,8 @@ newer one later.
 App::Easer provides the scaffolding for implementing hierarchical
 command-line applications in a very fast way.
 
-Development today happens only in [App::Easer::V2](https://metacpan.org/pod/App::Easer::V2). The legacy
-interface is still available in [App::Easer::V1](https://metacpan.org/pod/App::Easer::V1), which is also the
+Development today happens only in [App::Easer::V2](https://metacpan.org/pod/App%3A%3AEaser%3A%3AV2). The legacy
+interface is still available in [App::Easer::V1](https://metacpan.org/pod/App%3A%3AEaser%3A%3AV1), which is also the
 default but has its own documentation.
 
 # BUGS AND LIMITATIONS

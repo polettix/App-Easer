@@ -3,7 +3,7 @@ use v5.24;
 use warnings;
 use experimental qw< signatures >;
 no warnings qw< experimental::signatures >;
-{ our $VERSION = '2.004' }
+{ our $VERSION = '2.005' }
 use Carp;
 
 use parent 'Exporter';
