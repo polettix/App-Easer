@@ -1,5 +1,8 @@
 {{$NEXT}}
 
+2.006  2023-01-05 08:03:54 CET
+   - Release after 84 PASSes on CPAN Testers (thanks!)
+
 2.005  2023-01-02 00:36:49 CET
    - Enhance automatic generation of help for options
    - Fix bugs in automatic generation of help for options
