@@ -288,7 +288,8 @@ sub source_CmdLine ($self, $ignore, $args) {
 
 sub name_for_option ($self, $o) {
    return $o->{name} if defined $o->{name};
-   return $1 if defined $o->{getopt} && $o->{getopt} =~ m{\A(\w+)}mxs;
+   return $1
+     if defined $o->{getopt} && $o->{getopt} =~ m{\A(\w[-\w]*)}mxs;
    return lc $o->{environment}
      if defined $o->{environment} && $o->{environment} ne '1';
    return '~~~';
