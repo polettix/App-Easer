@@ -827,7 +827,7 @@ sub collect_help_for ($self, $target = undef) {
    $target //= $self->target;
    my @stuff;
 
-   push @stuff, $target->help, "\n\n";
+   push @stuff, ($target->help // 'no concise help yet'), "\n\n";
 
    if (defined(my $description = $target->description)) {
       $description =~ s{\A\s+|\s+\z}{}gmxs;    # trim
