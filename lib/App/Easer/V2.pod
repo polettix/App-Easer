@@ -1058,7 +1058,7 @@ class of C<$self>.
 =item C<residual_args>
 
    my @residual_args = $self->residual_args;
-   $self->residual_args(@new_args);
+   $self->residual_args(\@new_args);
 
 Access the list of I<residual> (i.e. unparsed) arguments from the
 command line.
