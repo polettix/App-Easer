@@ -277,11 +277,8 @@ sub source_CmdLine ($self, $ignore, $args) {
 
    # Check if we want to forbid the residual @args to start with a '-'
    my $strict = !$self->allow_residual_options;
-   if ($strict && @args && $args[0] =~ m{\A -}mxs) {
-      Getopt::Long::Configure('default', 'gnu_getopt');
-      Getopt::Long::GetOptionsFromArray(\@args, {});
-      die "bailing out\n";
-   }
+   die "bailing out (allow_residual_options is false and got <@args>)"
+      if $strict && @args && $args[0] =~ m{\A - . }mxs;
 
    return (\%option_for, \@args);
 } ## end sub source_CmdLine
