@@ -654,10 +654,8 @@ sub list_commands_for ($self, $target = undef) {
    return join "\n", @lines;
 } ## end sub list_commands_for
 
-sub help_channel ($self) { $self->target->help_channel }
-
 sub _build_printout_facility ($self) {
-   my $channel = $self->help_channel;
+   my $channel = $self->target->help_channel;
    my $refch = ref $channel;
 
    return $channel if $refch eq 'CODE';
