@@ -77,22 +77,6 @@ DISTRIBUTIONS
       perl 5.006
       strict 0
       warnings 0
-  Markdown-To-POD-0.06
-    pathname: P/PE/PERLANCAR/Markdown-To-POD-0.06.tar.gz
-    provides:
-      Markdown::To::POD 0.06
-    requirements:
-      Carp 0
-      Digest::MD5 0
-      Encode 0
-      Exporter 0
-      ExtUtils::MakeMaker 0
-      Text::Balanced 0
-      base 0
-      perl 5.010001
-      re 0
-      strict 0
-      warnings 0
   Module-Build-0.4231
     pathname: L/LE/LEONT/Module-Build-0.4231.tar.gz
     provides:
@@ -271,6 +255,28 @@ DISTRIBUTIONS
       Pod::Find 0.21
       Pod::Parser 1.13
       Test::More 0
+  Pod-Parser-1.65
+    pathname: M/MA/MAREKR/Pod-Parser-1.65.tar.gz
+    provides:
+      Pod::Cache 1.65
+      Pod::Cache::Item 1.65
+      Pod::Find 1.65
+      Pod::Hyperlink 1.65
+      Pod::InputObjects 1.65
+      Pod::InputSource 1.65
+      Pod::InteriorSequence 1.65
+      Pod::List 1.65
+      Pod::Paragraph 1.65
+      Pod::ParseTree 1.65
+      Pod::ParseUtils 1.65
+      Pod::Parser 1.65
+      Pod::PlainText 2.07
+      Pod::Select 1.65
+    requirements:
+      Cwd 0
+      ExtUtils::MakeMaker 0
+      File::Basename 0
+      Test::More 0.6
   Role-Tiny-2.002004
     pathname: H/HA/HAARG/Role-Tiny-2.002004.tar.gz
     provides:
