@@ -1,5 +1,19 @@
 {{$NEXT}}
 
+2.007  2023-03-10 21:54:07 CET
+   - Fix https://github.com/polettix/App-Easer/issues/6 "Unspecified help for
+     main command results in an "unitialized value" error" (thanks DJERIUS for
+     reporting)
+   - Fix https://github.com/polettix/App-Easer/issues/7 "Calling help on a
+     builtin command dies verbosely." (thanks DJERIUS for reporting)
+   - Fix https://github.com/polettix/App-Easer/issues/8 "incorrect
+     documentation for residual_args' argument" (thanks DJERIUS for reporting)
+   - Fix https://github.com/polettix/App-Easer/issues/9 "options with hypens
+     are truncated" (thanks DJERIUS for reporting)
+   - Fix https://github.com/polettix/App-Easer/issues/10 "Cannot pass dash as a
+     residual argument"
+   - Make error on unexpected residual args less confusing
+
 2.006  2023-01-05 08:03:54 CET
    - Release after 84 PASSes on CPAN Testers (thanks!)
 
