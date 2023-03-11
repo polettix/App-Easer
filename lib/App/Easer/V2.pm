@@ -489,13 +489,15 @@ sub find_child ($self) {
 # module names
 sub list_children ($self) {
    my @children = $self->children;
+
+   # handle auto-loading of children from modules in @INC via prefixes
    require File::Spec;
    my @expanded_inc = map {
       my ($v, $dirs) = File::Spec->splitpath($_, 'no-file');
       [$v, File::Spec->splitdir($dirs)];
    } @INC;
    my %seen;
-   push @children, map {
+   my @autoloaded_children = map {
       my @parts = split m{::}mxs, $_ . 'x';
       substr(my $bprefix = pop @parts, -1, 1, '');
       map {
@@ -516,7 +518,7 @@ sub list_children ($self) {
          else { () }
       } @expanded_inc;
    } $self->children_prefixes;
-   push @children, map {
+   push @autoloaded_children, map {
       my $prefix = $_;
       grep { !$seen{$_}++ }
         grep {
@@ -524,6 +526,10 @@ sub list_children ($self) {
          $this_prefix eq $prefix;
         } keys %App::Easer::V2::registered;
    } $self->children_prefixes;
+
+   # auto-loaded children are appended with consistent sorting
+   push @children, sort { $a cmp $b } @autoloaded_children;
+
    push @children, $self->auto_children
      if $self->force_auto_children // @children;
    return @children;
