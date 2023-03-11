@@ -1,5 +1,9 @@
 {{$NEXT}}
 
+2.007001  2023-03-11 15:20:07 CET
+   - Ensure consistent listing of sub-commands when they are auto-loaded from
+     modules in @INC via prefixes.
+
 2.007  2023-03-10 21:54:07 CET
    - Fix https://github.com/polettix/App-Easer/issues/6 "Unspecified help for
      main command results in an "unitialized value" error" (thanks DJERIUS for
