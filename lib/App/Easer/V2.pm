@@ -416,11 +416,11 @@ sub validate ($self, @n) {
       require Params::Validate;
       if (my $config_validator = $params_validate->{config} // undef) {
          my @array = $self->config_hash;
-         Params::Validate::validate(\@array, $config_validator);
+         &Params::Validate::validate(\@array, $config_validator);
       }
       if (my $args_validator = $params_validate->{args} // undef) {
          my @array = $self->residual_args;
-         Params::Validate::validate_pos(\@array, $args_validator->@*);
+         &Params::Validate::validate_pos(\@array, $args_validator->@*);
       }
    }
    else {} # no validation needed
