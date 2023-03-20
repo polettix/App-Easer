@@ -35,6 +35,11 @@ sub stdout_like ($self, $regex, $name = 'stdout') {
    return $self;
 }
 
+sub stdout_unlike ($self, $regex, $name = 'stdout') {
+   unlike $self->{stdout} // '', $regex, $name;
+   return $self;
+}
+
 sub diag_stdout ($self) {
    diag $self->{stdout};
    return $self;
