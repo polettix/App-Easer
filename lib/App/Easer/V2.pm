@@ -863,9 +863,13 @@ sub collect_help_for ($self, $target = undef) {
             push @stuff, sprintf "%15s   environment: %s\n", '', $env;
          }
 
-         push @stuff, sprintf "%15s       default: %s\n", '',
-           $opt->{default} // '*undef*'
-           if exists $opt->{default};
+         if (exists($opt->{default})) {
+            my $default = $opt->{default};
+            my $print = ! defined($default) ? '*undef*'
+               : ! ref($default) ? $default
+               : do { require JSON::PP; JSON::PP::encode_json($default) };
+            push @stuff, sprintf "%15s       default: %s\n", '', $print;
+         }
       } ## end for my $opt (@options)
 
       push @stuff, "\n";
