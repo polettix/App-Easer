@@ -520,10 +520,11 @@ sub list_children ($self) {
    } $self->children_prefixes;
    push @autoloaded_children, map {
       my $prefix = $_;
+      my $prefix_length = length($prefix);
       grep { !$seen{$_}++ }
         grep {
-         my $this_prefix = substr $_, 0, length $prefix;
-         $this_prefix eq $prefix;
+         (substr($_, 0, length $prefix) eq $prefix)
+            && (index($_, ':', $prefix_length) < 0);
         } keys %App::Easer::V2::registered;
    } $self->children_prefixes;
 

@@ -2,6 +2,7 @@
    - Remove bug in using Params::Validate, addresses
      https://github.com/polettix/App-Easer/issues/11, still no test.
    - Fix help message for multi-valued defaults
+   - Fix detecting sub-commands with registered stuff (used in bundling)
 
 2.007001  2023-03-11 15:20:07 CET
    - Ensure consistent listing of sub-commands when they are auto-loaded from
