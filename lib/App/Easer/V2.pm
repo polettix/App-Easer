@@ -146,7 +146,7 @@ sub resolve_options ($self, $spec) {
    return $self->$method(@names);
 } ## end sub resolve_options
 
-sub inherit_options ($self, @names) {
+sub inherit_options ($self, @names) {  # FIXME there might be bugs
    my %got;
    map {
       my @options;
@@ -162,7 +162,7 @@ sub inherit_options ($self, @names) {
                my $name = $self->name_for_option($_);
                (!$_->{transmit_exact})
                  && $name =~ m{$namerx}
-                 && !$got{$name};
+                 && !$got{$name};  # FIXME !$got{$name}++ maybe?
               } $ancestor->options;
             $ancestor = $ancestor->parent;
          } ## end while ($ancestor)
