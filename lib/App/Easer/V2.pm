@@ -135,12 +135,14 @@ sub hashy_class ($self, @r) { $self->_rw(@r) }
 sub help ($self, @r) { $self->_rw(@r) }
 sub help_channel ($slf, @r) { $slf->_rw(@r) }
 sub name ($s, @r) { $s->_rw(@r) // ($s->aliases)[0] // '**no name**' }
+sub options_help ($s, @r) { $s->_rw(@r) }
 sub params_validate ($self, @r) { $self->_rw(@r) }
 sub parent ($self, @r) { $self->_rw(@r) }
 sub pre_execute ($self, @r) { $self->_rwa(@r) }
 sub residual_args ($self, @r) { $self->_rwa(@r) }
 sub _last_cmdline ($self, @r) { $self->_rw(@r) }
 sub _sources ($self, @r) { $self->_rwn(sources => @r) }
+sub usage ($self, @r) { $self->_rw(@r) }
 
 sub is_root ($self) { ! defined($self->parent) }
 sub root ($self) {
@@ -693,8 +695,9 @@ sub auto_help ($self) { return $self->_auto_child('help', 1) }
 
 sub auto_tree ($self) { return $self->_auto_child('tree', 1) }
 
-sub run_help ($self) { return $self->auto_help->run($self->name) }
-sub full_help_text ($s) { return $s->auto_help->collect_help_for($s) }
+sub run_help ($self, $mode = 'help') { $self->auto_help->run($mode) }
+
+sub full_help_text ($s, @as) { $s->auto_help->collect_help_for($s, @as) }
 
 sub load_module ($sop, $module) {
    my $file = "$module.pm" =~ s{::}{/}grmxs;
@@ -907,7 +910,8 @@ sub execute ($self) {
 
 package App::Easer::V2::Command::Help;
 push our @ISA, 'App::Easer::V2::Command::Commands';
-sub aliases                { 'help' }
+our @aliases = qw< help usage >;
+sub aliases                { @aliases }
 sub allow_residual_options { 0 }
 sub description            { 'Print help for (sub)command' }
 sub help                   { 'print a help command' }
@@ -1016,20 +1020,28 @@ sub __commandline_help ($getopt) {
 } ## end sub __commandline_help ($getopt)
 
 sub execute ($self) {
-   $self->printout($self->collect_help_for($self->target));
+say "\n\n\n", $self->call_name, "\n\n\n";
+   $self->printout($self->collect_help_for($self->target, $self->call_name));
    return 0;
 }
 
-sub collect_help_for ($self, $target = undef) {
-   $target //= $self->target;
+sub collect_help_for ($self, $target, $mode = 'help') {
    my @stuff;
+
+   my $trim_and_prefix = sub ($text, $prefix = '    ') {
+      $text =~ s{\A\s+|\s+\z}{}gmxs;    # trim
+      $text =~ s{^}{$prefix}gmxs;       # add some indentation
+      return $text;
+   };
 
    push @stuff, ($target->help // 'no concise help yet'), "\n\n";
 
-   if (defined(my $description = $target->description)) {
-      $description =~ s{\A\s+|\s+\z}{}gmxs;    # trim
-      $description =~ s{^}{    }gmxs;          # add some indentation
-      push @stuff, "Description:\n$description\n\n";
+   if ($mode eq 'help' && defined(my $description = $target->description)) {
+      push @stuff, "Description:\n", $trim_and_prefix->($description), "\n\n";
+   }
+
+   if (defined(my $usage = $target->usage)) {
+      push @stuff, "Usage:\n", $trim_and_prefix->($usage), "\n\n";
    }
 
    # Print this only for sub-commands, not for the root
@@ -1037,35 +1049,52 @@ sub collect_help_for ($self, $target = undef) {
      $target->aliases
      if $target->parent;
 
-   if (my @options = $target->options) {
+   my @options = $target->options;
+   my $options_help = $target->options_help;
+   if (@options || defined($options_help)) {
       push @stuff, "Options:\n";
-      my $n = 0;                               # count the option
-      for my $opt (@options) {
-         push @stuff, "\n" if $n++;            # from second line on
 
-         push @stuff, sprintf "%15s: %s\n", $target->name_for_option($opt),
-           $opt->{help} // '';
+      $options_help //= {};
+      if (! ref($options_help)) {
+         push @stuff, $trim_and_prefix->($options_help), "\n\n";
+      }
+      else {
+         my $preamble = $options_help->{preamble} // undef;
+         push @stuff, $trim_and_prefix->($preamble), "\n\n"
+            if defined($preamble);
 
-         if (exists $opt->{getopt}) {
-            my @lines = __commandline_help($opt->{getopt});
-            push @stuff, sprintf "%15s  command-line: %s\n", '',
-              shift(@lines);
-            push @stuff,
-              map { sprintf "%15s                %s\n", '', $_ } @lines;
-         } ## end if (exists $opt->{getopt...})
+         my $n = 0;                               # count the option
+         for my $opt (@options) {
+            push @stuff, "\n" if $n++;            # from second line on
 
-         if (defined(my $env = $self->environment_variable_name($opt))) {
-            push @stuff, sprintf "%15s   environment: %s\n", '', $env;
-         }
+            push @stuff, sprintf "%15s: %s\n", $target->name_for_option($opt),
+            $opt->{help} // '';
 
-         if (exists($opt->{default})) {
-            my $default = $opt->{default};
-            my $print = ! defined($default) ? '*undef*'
-               : ! ref($default) ? $default
-               : do { require JSON::PP; JSON::PP::encode_json($default) };
-            push @stuff, sprintf "%15s       default: %s\n", '', $print;
-         }
-      } ## end for my $opt (@options)
+            if (exists $opt->{getopt}) {
+               my @lines = __commandline_help($opt->{getopt});
+               push @stuff, sprintf "%15s  command-line: %s\n", '',
+               shift(@lines);
+               push @stuff,
+               map { sprintf "%15s                %s\n", '', $_ } @lines;
+            } ## end if (exists $opt->{getopt...})
+
+            if (defined(my $env = $self->environment_variable_name($opt))) {
+               push @stuff, sprintf "%15s   environment: %s\n", '', $env;
+            }
+
+            if (exists($opt->{default})) {
+               my $default = $opt->{default};
+               my $print = ! defined($default) ? '*undef*'
+                  : ! ref($default) ? $default
+                  : do { require JSON::PP; JSON::PP::encode_json($default) };
+               push @stuff, sprintf "%15s       default: %s\n", '', $print;
+            }
+         } ## end for my $opt (@options)
+
+         my $postamble = $options_help->{postamble} // undef;
+         push @stuff, "\n", $trim_and_prefix->($postamble), "\n"
+            if defined($postamble);
+      }
 
       push @stuff, "\n";
    } ## end if (my @options = $target...)

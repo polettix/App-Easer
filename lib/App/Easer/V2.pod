@@ -908,9 +908,14 @@ See L</Application High Level View>.
 
 =item C<full_help_text>
 
-   my $text = $self->full_help_text;
+   my $full_help = $self->full_help_text;
+   my $usage_help = $self->full_help_text('usage');
 
 Get the full auto-generated help text for the command, e.g. to print it.
+
+It can be passed an additional string paramter, which can be C<help> or
+C<usage>. The former generates the help including the C<Description>
+section, the latter does not include it.
 
 =item C<getopt_config>
 
@@ -1134,6 +1139,7 @@ returns.
 =item C<run_help>
 
    $self->run_help;
+   $self->run_help('usage');
 
 Run the C<auto_help> command, which should print out the help for the
 command itself. This is not usually needed, but comes handy to implement
@@ -1144,6 +1150,10 @@ option, like this:
       return $self->run_help if $self->config('help');
       ...
    }
+
+It is possible to pass the string C<help> (default) or the string
+C<usage>; the latter prints a shorter message, i.e. it does not print
+the C<Description> section.
 
 =item C<set_config>
 
@@ -1643,6 +1653,13 @@ To get C<help> about a command, App::Easer::V2 provides a C<help>
 sub-command out of the box I<most of the times>. The exception is for
 I<leaf> commands, which do not have sub-commands.
 
+After version C<2.007001> (not included), in addition to the C<help>
+command there is also a C<usage> command, which provides the same output
+as C<help> but without the C<Description> section. The C<usage>
+sub-command is managed as an alias of C<help>; it is possible to remove
+this alias by setting C<@App::Easer::V2::Command::Help::aliases> to the
+string C<help> alone.
+
 This is not a big deal with hierarchical applications, because it's
 possible to invoke the C<help> sub-command of the parent command and
 pass the name of the sub-command we need help with:
@@ -1678,6 +1695,9 @@ sub-command explicitly:
       # ...
    }
 
+As of versions after C<2.007001> (not included) it is possible to pass
+an additional parameter to C<run_help> with string C<usage>, to get a
+shorter help which does not include the C<Description> section.
 
 =head1 BUGS AND LIMITATIONS
 
