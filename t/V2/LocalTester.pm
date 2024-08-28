@@ -57,6 +57,12 @@ sub stderr_like ($self, $regex, $name = 'stderr') {
    return $self;
 }
 
+sub name_is ($self, $expected, $test_name = undef) {
+   $test_name //= "command name is '$expected'";
+   is $self->{name}, $expected, $test_name;
+   return $self;
+}
+
 sub conf_is ($self, $expected, $name = 'configuration') {
    is_deeply $self->{conf}, $expected, $name
       or diag Dumper({ got => $self->{conf}, expected => $expected});
