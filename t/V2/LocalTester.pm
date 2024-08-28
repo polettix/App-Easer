@@ -5,6 +5,7 @@ use Capture::Tiny 'capture';
 use App::Easer V2 => 'run';
 use Test::More;
 use Exporter 'import';
+use Data::Dumper;
 
 our @EXPORT = ('test_run');
 
@@ -56,7 +57,8 @@ sub stderr_like ($self, $regex, $name = 'stderr') {
 }
 
 sub conf_is ($self, $expected, $name = 'configuration') {
-   is_deeply $self->{conf}, $expected, $name;
+   is_deeply $self->{conf}, $expected, $name
+      or diag Dumper({ got => $self->{conf}, expected => $expected});
    return $self;
 }
 
