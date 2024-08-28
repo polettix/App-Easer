@@ -9,11 +9,12 @@ use Data::Dumper;
 
 our @EXPORT = ('test_run');
 
-sub test_run ($app, $args, $env, $command = 'MAIN') {
+sub test_run ($app, $args, $env, $expected_command = 'MAIN') {
    my ($stdout, $stderr, @result, $clean_run, $exception);
    my $self = bless {}, __PACKAGE__;
    local *LocalTester::command_execute = sub ($cmd) {
-      return unless $cmd->name eq ($command // '');
+      my $name = $self->{name} = $cmd->name;
+      return unless $name eq ($expected_command // '');
       $self->{conf} = $cmd->config_hash;
       $self->{args} = [$cmd->residual_args];
    };
