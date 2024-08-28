@@ -17,6 +17,7 @@ sub dd (@stuff) {
    no warnings;
    require Data::Dumper;
    local $Data::Dumper::Indent = 1;
+   local $Data::Dumper::Sortkeys = 1;
    Data::Dumper::Dumper(
         @stuff == 0 ? []
       : (ref($stuff[0]) || @stuff % 2) ? \@stuff
@@ -37,16 +38,18 @@ sub import ($package, @args) {
    my $target = caller;
    my @args_for_exporter;
    our %registered;
+
+   my $parent_class = 'App::Easer::V2::Command';
    while (@args) {
       my $request = shift @args;
       if ($request eq '-command') {
          $registered{$target} = 1;
          no strict 'refs';
-         push @{$target . '::ISA'}, 'App::Easer::V2::Command';
+         push @{$target . '::ISA'}, $parent_class;
       }
       elsif ($request eq '-inherit') {
          no strict 'refs';
-         push @{$target . '::ISA'}, 'App::Easer::V2::Command';
+         push @{$target . '::ISA'}, $parent_class;
       }
       elsif ($request eq '-register') {
          $registered{$target} = 1;
@@ -60,6 +63,14 @@ sub import ($package, @args) {
          no warnings 'once';
          ${$target . '::app_easer_spec'} = shift @args;
       } ## end elsif ($request eq '-spec')
+      elsif ($request eq '-parent') { # 2024-08-28 EXPERIMENTAL
+         Carp::croak "no parent class provided"
+           unless @args;
+         $parent_class = shift @args;
+
+         # make sure it's required
+         App::Easer::V2::Command->load_module($parent_class);
+      }
       else { push @args_for_exporter, $request }
    } ## end while (@args)
    $package->export_to_level(1, $package, @args_for_exporter);
@@ -117,16 +128,79 @@ sub default_child ($self, @r) { $self->_rw(@r) }
 sub description ($self, @r) { $self->_rw(@r) }
 sub environment_prefix ($self, @r) { $self->_rw(@r) }
 sub execution_reason ($self, @r) { $self->_rw(@r) }
-sub force_auto_children ($self, @r) { $self->_rw(@r) }
 sub fallback_to ($self, @r) { $self->_rw(@r) }
+sub final_commit_stack ($self, @r) { $self->_rwa(@r) }
+sub force_auto_children ($self, @r) { $self->_rw(@r) }
 sub hashy_class ($self, @r) { $self->_rw(@r) }
 sub help ($self, @r) { $self->_rw(@r) }
 sub help_channel ($slf, @r) { $slf->_rw(@r) }
 sub name ($s, @r) { $s->_rw(@r) // ($s->aliases)[0] // '**no name**' }
 sub params_validate ($self, @r) { $self->_rw(@r) }
 sub parent ($self, @r) { $self->_rw(@r) }
+sub pre_execute ($self, @r) { $self->_rwa(@r) }
 sub residual_args ($self, @r) { $self->_rwa(@r) }
-sub sources ($self, @r) { $self->_rwa(@r) }
+sub _last_cmdline ($self, @r) { $self->_rw(@r) }
+sub _sources ($self, @r) { $self->_rwn(sources => @r) }
+
+sub is_root ($self) { ! defined($self->parent) }
+sub root ($self) {
+   my $slot = $self->slot;
+   return $slot->{root} //= do {
+      my $retval = $self;
+      while (defined(my $parent = $retval->parent)) {
+         $retval = $parent;
+      }
+      $retval;
+   };
+}
+
+
+# 2024-08-27 expand to allow hashref in addition to arrayref
+# backwards-compatibility contract is that overriding this function allows
+# returning the list of sources to use, which might be composed of a single
+# hashref...
+sub sources ($self, @new) {
+   my $r;
+   my $slot = $self->slot;
+   if (@new) { # setter + getter
+      $r = $slot->{sources} = $new[0];
+   }
+   else {   # getter only, set default if *nothing* has been set yet
+      state $default_array =
+         [ qw< +CmdLine +Environment +Parent=70 +Default=100 > ];
+      state $default_hash  = {
+         current => [ qw< +CmdLine +Parent > ],
+         final =>
+            [ qw< +LastCmdLine +Parent +FinalEnvironment +FinalDefault > ],
+      };
+      $r = $slot->{sources};
+      $r = $slot->{sources} =
+         ! defined($r)           ? Carp::confess()
+         : $r eq 'default-array' ? $default_array
+         : $r eq 'default-hash'  ? $default_hash
+         :                         Carp::confess()
+         unless ref($r); # string-based, get either default
+   }
+   Carp::confess() unless defined($r);
+
+   return $r->@* if ref($r) eq 'ARRAY'; # backwards-compatible behaviour
+   return \$r if ref($r) eq 'HASH';     # new behaviour
+   Carp::confess(); # unsupported condition
+}
+
+# getter only
+sub _sources_for_phase ($self, $phase) {
+   my @sources = $self->sources; # might call an overridden thing
+
+   return ${$sources[0]}->{$phase}
+      if @sources == 1
+         && ref($sources[0]) eq 'REF'
+         && ref(${$sources[0]}) eq 'HASH';
+
+   # backwards compatibility means that we only support the "current"
+   # phase and do nothing for other ones.
+   return $phase eq 'current' ? \@sources : ();
+}
 
 sub supports ($self, $what) {
    any { $_ eq $what } $self->aliases;
@@ -182,12 +256,15 @@ sub new ($pkg, @args) {
       default_child          => 'help',
       environment_prefix     => '',
       fallback_to            => undef,
+      final_commit_stack     => [],
       force_auto_children    => undef,
       hashy_class            => __PACKAGE__,
       help_channel           => '-STDOUT:encoding(UTF-8)',
       options                => [],
       params_validate        => undef,
-      sources => [qw< +CmdLine +Environment +Parent=70 +Default=100 >],
+      pre_execute            => [],
+      residual_args          => [],
+      sources                => 'default-array',   # 2024-08-24 defer
       ($pkg_spec // {})->%*,
       (@args && ref $args[0] ? $args[0]->%* : @args),
    };
@@ -212,14 +289,14 @@ sub merge_hashes ($self, @hrefs) {
 # collect options values from $args (= [...]) & other sources
 # sets own configuration and residual_args
 # acts based on what is provided by method options()
-sub collect ($self, @args) {
+sub _collect($self, $sources, @args) {
    my @sequence;    # stuff collected from Sources, w/ context
    my @slices;      # ditto, no context
    my $config = {};      # merged configuration
    my @residual_args;    # what is left from the @args at the end
 
    my $last_priority = 0;
-   for my $source ($self->sources) {
+   for my $source ($sources->@*) {
       my ($src, @opts) = ref($source) eq 'ARRAY' ? $source->@* : $source;
       my $meta = (@opts && ref $opts[0]) ? shift @opts : {};
       my $locator = $src;
@@ -242,8 +319,22 @@ sub collect ($self, @args) {
       $self->_rwn(config => {merged => $config, sequence => \@sequence});
    } ## end for my $source ($self->...)
 
-   # save and return
-   $self->residual_args(\@residual_args);
+   # return what's left
+   return \@residual_args;
+}
+
+sub collect ($self, @args) {
+   if (my $sources = $self->_sources_for_phase('current')) {
+      $self->residual_args($self->_collect($sources, @args));
+   }
+   return $self;
+} ## end sub collect
+
+# last round of configuration options collection
+sub final_collect ($self) {
+   if (my $sources = $self->_sources_for_phase('final')) {
+      $self->_collect($sources);
+   }
    return $self;
 } ## end sub collect
 
@@ -280,8 +371,15 @@ sub source_CmdLine ($self, $ignore, $args) {
    die "bailing out (allow_residual_options is false and got <@args>)"
       if $strict && @args && $args[0] =~ m{\A - . }mxs;
 
+   $self->_last_cmdline( { option_for => \%option_for, args => \@args });
+
    return (\%option_for, \@args);
 } ## end sub source_CmdLine
+
+sub source_LastCmdLine ($self, @ignore) {
+   my $last = $self->_last_cmdline or return {};
+   return $last->{option_for};
+}
 
 sub name_for_option ($self, $o) {
    return $o->{name} if defined $o->{name};
@@ -292,13 +390,14 @@ sub name_for_option ($self, $o) {
    return '~~~';
 } ## end sub name_for_option
 
-sub source_Default ($self, @ignore) {
+sub source_Default ($self, $include_inherited = 0, @ignore) {
    return {
       map { $self->name_for_option($_) => $_->{default} }
       grep { exists $_->{default} }
-      grep { !$_->{inherited} } $self->options
+      grep { $include_inherited || !$_->{inherited} } $self->options
    };
-} ## end sub source_Default
+}
+sub source_FinalDefault ($self, @i) { $self->source_Default(1, @i) }
 
 sub source_FromTrail ($self, $trail, @ignore) {
    my $conf = $self->config_hash;
@@ -327,7 +426,8 @@ sub environment_variable_name ($self, $ospec) {
    return uc(join '', @prefixes, $self->name_for_option($ospec));
 } ## end sub environment_variable_name
 
-sub source_Environment ($self, @ignore) {
+
+sub source_Environment ($self, $include_inherited = 0, @ignore) {
    return {
       map {
          my $en = $self->environment_variable_name($_);
@@ -335,9 +435,10 @@ sub source_Environment ($self, @ignore) {
            && exists($ENV{$en})
            ? ($self->name_for_option($_) => $ENV{$en})
            : ();
-      } grep { !$_->{inherited} } $self->options
+      } grep { $include_inherited || !$_->{inherited} } $self->options
    };
 } ## end sub source_Environment
+sub source_FinalEnvironment ($s, @i) { $s->source_Environment(1, @i) }
 
 sub source_JsonFileFromConfig ($self, $key, @ignore) {
    $key = $key->[0] // 'config';
@@ -390,12 +491,51 @@ sub set_config ($self, $key, @value) {
    return $self;
 } ## end sub set_config
 
-# commit collected options values, called after collect ends
+# (intermediate) commit collected options values, called after collect ends
 sub commit ($self, @n) {
    my $commit = $self->_rw(@n);
-   return $commit if @n;
+   return $commit if @n;  # setter, don't call the commit callback
    return unless $commit;
    return $self->ref_to_sub($commit)->($self);
+} ## end sub commit
+
+# final commit of collected options values, called after final_collect ends
+# this method tries to "propagate" the call up to the parent (and the root
+# eventually) unless told not to do so. This should allow concentrating
+# some housekeeping operations in the root command while still waiting for
+# all options to have been collected
+sub final_commit ($self, @n) {
+   return $self->_rw(@n) if @n;  # setter, don't call the callback
+
+   # we operate down at the slot level because we want to separate the case
+   # where key 'final_commit' is absent (defaulting to propagation up to
+   # the parent) and where it's set but otherwise false (in which case
+   # there is no propagation).
+   my $slot = $self->slot;
+
+   # put "myself" onto the call stack for final_commit
+   my $stack = $slot->{final_commit_stack} //= [];
+   push $stack->@*, $self;
+
+   if (exists($slot->{final_commit})) {
+      my $commit = $slot->{final_commit};
+
+      # if $commit is false (but present, because it exists) then we
+      # stop and do not propagate to the parent
+      return unless $commit;
+
+      # otherwise, we call it and its return value will tell us whether to
+      # propagate to the parent too or stop here
+      my $propagate_to_parent = $self->ref_to_sub($commit)->($self);
+      return unless $propagate_to_parent;
+   }
+
+   # here we try to propagate to the parent... if it exists
+   my $parent = $self->parent;
+   return unless $parent;  # we're root, no parent, no propagation up
+
+   $parent->final_commit_stack([$stack->@*]);
+   return $parent->final_commit;
 } ## end sub commit
 
 # validate collected options values, called after commit ends.
@@ -583,6 +723,31 @@ sub instantiate ($sop, $class, @args) {
    return $class->new(@args);
 }
 
+sub _reparent ($self, $child) {
+   $child->parent($self);
+
+   # 2024-08-27 propagate sources configurations
+   if (! ref($child->_sources)) { # still default, my need to set it
+      my ($first, @rest) = $self->sources;
+      if (ref($first) eq 'REF') {  # new approach, propagate
+         my $ssources = $$first;
+         $child->_sources(my $csources = { $ssources->%* });
+         if (my $next = $ssources->{next}) {
+            my @csources =
+                 ref($next) eq 'ARRAY' ? $next->@*
+               : ref($next) eq 'CODE'  ? $next->($child)
+               :                         Carp::confess(); # no clue
+            $csources->{current} = \@csources;
+         }
+      }
+   }
+
+   # propagate pre-execute callbacks down the line
+   $child->pre_execute_schedule($self->pre_execute);
+
+   return $child;
+}
+
 # transform one or more children "hints" into instances.
 sub inflate_children ($self, @hints) {
    my $hashy = $self->hashy_class;
@@ -591,11 +756,10 @@ sub inflate_children ($self, @hints) {
       if (!blessed($child)) {    # actually inflate it
          $child =
              ref($child) eq 'ARRAY' ? $self->instantiate($child->@*)
-           : ref($child) eq 'HASH' ? $self->instantiate($hashy, $child)
-           :                         $self->instantiate($child);
+           : ref($child) eq 'HASH'  ? $self->instantiate($hashy, $child)
+           :                          $self->instantiate($child);
       } ## end if (!blessed($child))
-      $child->parent($self);
-      $child;
+      $self->_reparent($child);  # returns $child
    } grep { defined $_ } @hints;
 } ## end sub inflate_children
 
@@ -615,6 +779,31 @@ sub execute ($self) {
    return $sub->($self);
 }
 
+sub pre_execute_schedule ($self, @specs) {
+   if (my $spec = $self->_rw) {
+      my $sub = $self->ref_to_sub($spec) or die "nothing for pre_execute_schedule\n";
+      return $sub->($self, @specs);
+   }
+
+   # default approach is to append to the current ones
+   $self->pre_execute([$self->pre_execute, @specs]);
+   return $self;
+}
+
+sub pre_execute_run ($self) {
+   if (my $spec = $self->_rw) {
+      my $sub = $self->ref_to_sub($spec) or die "nothing to pre-execute\n";
+      return $sub->($self);
+   }
+
+   # default is to run 'em all
+   for my $spec ($self->pre_execute) {
+      my $sub = $self->ref_to_sub($spec) or die "nothing to pre-execute\n";
+      $sub->($self);
+   }
+   return $self;
+}
+
 sub run ($self, $name, @args) {
    $self->call_name($name);
    $self->collect(@args);
@@ -622,7 +811,12 @@ sub run ($self, $name, @args) {
    $self->validate;
    my ($child, @child_args) = $self->find_child;
    return $child->run(@child_args) if defined $child;
+
+   # we're the executors
    $self->execution_reason($child_args[0]);
+   $self->final_collect;  # no @args passed in this collection
+   $self->final_commit;
+   $self->pre_execute_run;
    return $self->execute;
 } ## end sub run
 

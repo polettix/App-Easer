@@ -809,6 +809,37 @@ need. Used by C<fallback>.
 
 See L</Application High Level View>.
 
+=item C<final_collect>
+
+   $self->final_collect($callback_sub);
+   $self->final_collect;
+
+Can be set either as a callback or as a method override. Not supposed to
+be called directly.
+
+See L<< /Sources as hash reference >>. Available after version
+C<2.007001> (not included).
+
+=item C<final_commit>
+
+   $self->final_commit($callback_sub);
+   $self->final_commit;
+
+Can be set either as a callback or as a method override. Not supposed to
+be called directly.
+
+See L<< /New commit finalization: C<final_commit> >>. Available after
+version C<2.007001> (not included).
+
+=item C<final_commit_stack>
+
+   my @sequence = $self->final_commit_stack;
+
+Sequence of command objects during the C<final_commit> phase.
+
+See L<< /New commit finalization: C<final_commit> >>. Available after
+version C<2.007001> (not included).
+
 =item C<find_child>
 
    my ($child_instance, @child_args) = $self->find_child;
@@ -955,6 +986,13 @@ This method loads class C<$class> via C<load_module> and returns:
 
 This is a class method.
 
+=item C<is_root>
+
+   say 'root command!' if $self->is_root;
+
+Return I<true> if the command is the I<root>, i.e. if it has no parent.
+Available after version C<2.007001>.
+
 =item C<list_children>
 
    my @children = $self->list_children;
@@ -1072,6 +1110,13 @@ optiosn specifications are hash references, but they might be strings
 like C<+parent> (for inheriting all that is I<transmitted> from a parent
 command) or regular expressions to bulk import options based on their
 names.
+
+=item C<root>
+
+   my $root_command = $self->root;
+
+Generalization of L</parent> to go all the way up to the topmost command
+of the chain. Available after version C<2.007001>.
 
 =item C<run>
 
@@ -1222,6 +1267,15 @@ C<App::Easer> comes with several sources for getting configurations from
 a variety of places, but still leaves the door open to add more
 customized ones.
 
+Up to version C<2.007001> included, the C<sources> key could only point
+to an I<array reference> holding a list of sources. After that release,
+it has been expanded to I<also> accept a I<hash reference>, allowing for
+a new and more sophisticated handling of option values collection. In
+either case, anyway, processing arrives at a point where there is a
+I<list of sources> to be processed as described below; using the I<array
+ref> keeps backwards compatibility with the old behaviour. See
+L</Sources as hash reference> for additional details on the new way.
+
 Sources are I<considered> with respect to two different ordering
 methods: their place in the array pointed by key C<sources> and their
 I<priority>. The former sets the order in which data from each source is
@@ -1278,6 +1332,17 @@ using the C<getopt> key, according to the rules explained in
 C<GetOpt::Long>. The first alias of an option is also set as the
 option's name in case key C<name> is missing.
 
+=item * C<+LastCmdLine>
+
+(After version C<2.007001>, excluded)
+
+This source returns the same configuration hash as that determined by
+the last C<+CmdLine> that was executed within a specific command level.
+
+This source is supposed to be used only in relation to the new
+I<hash-based> way of setting sources (see L</Sources as hash
+reference>).
+
 =item * C<+Environment>
 
 This source gets values from environment variables. It is set using the
@@ -1285,6 +1350,20 @@ C<environment> key, which can be set to either the name of the
 environment variable (this is case sensitive) or automatically from
 higher-level configuration C<environment_prefix> and the option's name
 in case it is set to value C<1> exactly.
+
+This source expliticly ignores I<inherited> options, to prevent
+overwriting previously set options. It is possible to override this by
+passing a true value when calling the source method, like this:
+
+   [ '+Environment', 1 ]
+
+Another alternative to do this is use C<+FinalEnvironment>.
+
+=item * C<+FinalEnvironment>
+
+This source works the same as C<+Environment>, except that it works also
+for options that have been inherited. This is particularly useful when
+using L<Sources as hash reference>.
 
 =item * C<+Parent>
 
@@ -1294,6 +1373,20 @@ sub-commands).
 =item * C<+Default>
 
 Get a default value from the C<default> sub-key of the option.
+
+This source expliticly ignores I<inherited> options, to prevent
+overwriting previously set options. It is possible to override this by
+passing a true value when calling the source method, like this:
+
+   [ '+Default', 1 ]
+
+Another alternative to do this is use C<+FinalDefault>.
+
+=item * C<+FinalDefault>
+
+This source works the same as C<+Default>, except that it works also for
+options that have been inherited. This is particularly useful when using
+L<Sources as hash reference>.
 
 =item * C<+JsonFileFromConfig>
 
@@ -1334,6 +1427,171 @@ values read from there take precedence over the defaults:
 
 This is the main reason why the I<priority> has been detached from order
 of appearance.
+
+=head3 Sources as hash reference
+
+Up to version C<2.007001>, the C<sources> key can only be set to an
+array reference holding a list of sources. Each command level can have
+its own list, or rely on the default one provided by C<App::Easer>.
+
+This setup works in many situation but becomes too rigid when dealing
+with inherited options. As an example, suppose that we define an option
+C<loglevel> allowing to set the log level (e.g. info, debug, trace, ...)
+for our suite of commands. At this point, either we limit the option at
+the highest level only (then setting the logger configuration in the
+topmost command's C<commit>), or we have to wait until the leaf command
+is determined, which implies that every leaf command must repeat the
+code to set the logger's configuration.
+
+Additionally, this setup might not play well with options that load
+configurations from files, because some files might be loaded based on
+command line configurations that appear in upper commands but might
+eventually be overridden in lower commands. So, in the following
+example, we want to be able to only load C<second.json> and disregard
+C<first.json>:
+
+   myprg --config first.json foo --config second.json
+
+For this reason, release past C<2.007001> (which is not included) also
+support an alternative way of configuring C<sources>, namely through a
+hash reference that supports three keys:
+
+
+=over
+
+=item C<current>
+
+(mandatory) this is the equivalent of the I<old> behaviour, i.e. a list
+of sources that is used to figure out the order and precedence of
+collecting options.
+
+=item C<next>
+
+(optional) this allows setting the list of sources for the children
+sub-commands (unless the sub-command has one already configured), i.e.
+its C<current> when it will be called. It can be a straight list or a
+sub reference, in which case it will be called to determine the list.
+
+When absent, by default the children inherits the same C<current> list
+as the parent command.
+
+=item C<final>
+
+(optional) this allows setting a list of sources that is used at the
+very end of the child determination process, i.e. when the program
+determines the descendant sub-command for which the C<execute>
+method/callback will be called, in a new sub-phase aptly named
+C<final_collect>.
+
+=back
+
+With the new hash-based configuration, the determination of the right
+sub-command proceeds like before, using the C<current> list of sources
+at each step (the C<current> for a sub-command might have been set using
+the C<next> of the parent command). During this phase, the C<commit>
+method/callback is called at every level just like before.
+
+After the search for the right command to C<execute> is finished, method
+C<final_collect> is called, using the C<final> list of the hash
+reference. This allows deferring the collection of data from
+non-commmand-line sources at the very end.
+
+The default configuration when adopting the new hash-based C<sources> is
+the following:
+
+   {
+      current => [ qw< +CmdLine +Parent > ],
+      final =>
+         [ qw< +LastCmdLine +Parent +FinalEnvironment +FinalDefault > ],
+   }
+
+In this configuration, all command levels share the same I<forward>
+configuration, only gathering command-line parameters, with later
+sub-commands taking precedence (C<+CmdLine> has higher priority than
+C<+Parent>).
+
+After the right sub-command to execute is determined, then the latest
+command line is taken (it is not parsed again), then the parent (like
+before, it only contains command-line parameters from upper commands),
+then the environment, then the defaults.
+
+In summary: all command-line parameters with precedence from right to
+left, then the environment, then defaults.
+
+It is easy to also add the C<+JsonFileFromConfig> source, like in the
+following example:
+
+
+   {
+      current => [ qw< +CmdLine +Parent > ],
+      final =>
+         [
+            qw<
+               +LastCmdLine=10
+               +Parent=20
+               +FinalEnvironment=30
+               +FinalDefault=100
+               +JsonFileFromConfig=40
+            >
+         ],
+   }
+
+Priorities for the first three sources in C<final> are set explicitly
+but would take the same values implicitly, they have been put in the
+example only for clarity.
+
+As before, we put the C<+FinalDefault> option I<before> the
+C<+JsonFileFromConfig> so that we can read the default value for the
+C<config> option (if present), while still giving stuff from the file
+precendence over the defaults.
+
+After this information gathering phase, method/callback C<final_commit>
+is called (much like C<commit> is called after C<collect>).
+
+It is possible to set key C<final_collect> or override it as a method,
+for maximum flexibility. Doing this is a liability.
+
+
+=head3 New commit finalization: C<final_commit>
+
+in the new L</Sources as hash reference> way of setting C<sources>,
+after the final roundup of options done by C<final_collect>, the
+C<final_commit> method/callback is executed.
+
+By default, this triggers calling it all up the commands ladder, i.e.
+from the leaf command that will be executed up to the root command. This
+allows setting "final configurations" (like a logger) in the
+C<final_commit> method of the topmost command, once and for all.
+
+It is anyway possible to set callbacks or override the method at each
+intermediate or at the leaf level, of course. In this case, the return
+value of the method/callback will be used to determine whether to
+continue up the ladder or not; I<true> values will continue the call
+chain, I<false> values will interrupt it.
+
+It's also possible to break the chain of calls by setting the key to a
+I<false> value.
+
+It MUST be considered that the method is specific to each command, which
+usually does not have an I<updated> view of the whole configuration,
+because that is only known to the leaf command's object. For this
+reason, method/callback C<final_commit> can also call method
+C<final_commit_stack>, which provides a list of all command objects that
+are involved in the chain, starting from the leaf command down towards
+the root.
+
+For this reason, the way to get the I<full> configuration in the topmost
+command is the following:
+
+   sub final_commit ($self) {
+      my ($leaf) = $self->final_commit_stack;
+      my $final_config = $leaf->config_hash;
+      ...
+   }
+
+Method C<final_commit_stack> is only available (predictably) inside
+method/callback C<final_commit>; its availability elsewhere is not
+guaranteed.
 
 =head2 Accessing Collected Option Values
 
