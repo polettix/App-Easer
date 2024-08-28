@@ -1059,6 +1059,20 @@ package variable C<$class . '::app_easer_spec'>, if set.
 See L</Application High Level View> and L</OPTIONS>. The returned list
 if passed through C<resolve_options> anyway, e.g. to inherit options.
 
+=item C<options_help>
+
+   my $options_help = $self->options_help;
+   $self->options_help($new_help);
+
+Set text to be printed for the options.
+
+If set to a plain string, that string is all that will be printed, i.e.
+no automatic help text from C<options> will be generated.
+
+If set to a hash reference, two keys are supported: C<preamble> and
+C<postamble>. When present, they will be printed respectively before and
+after the help text generated automatically from C<options>.
+
 =item C<params_validate>
 
    my $href_or_undef = $self->params_validate;
