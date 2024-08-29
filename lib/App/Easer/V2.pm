@@ -1032,7 +1032,6 @@ sub __commandline_help ($getopt) {
 } ## end sub __commandline_help ($getopt)
 
 sub execute ($self) {
-say "\n\n\n", $self->call_name, "\n\n\n";
    $self->printout($self->collect_help_for($self->target, $self->call_name));
    return 0;
 }
