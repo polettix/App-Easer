@@ -1283,7 +1283,7 @@ inherited (no inheritance via a regular expression).
 
 =back
 
-=head2 Option Values Collection
+=head2 Option Values Collection (C<sources>)
 
 The collection is performed thanks to I<sources>, which can be set with
 the corresponding C<sources> key or method (depending on the style).
@@ -1647,6 +1647,93 @@ command is the following:
 Method C<final_commit_stack> is only available (predictably) inside
 method/callback C<final_commit>; its availability elsewhere is not
 guaranteed.
+
+=head2 Specification Inheritance vs. Value Acquisition
+
+C<App::Easer> provides two different ways of I<sharing> options between
+parents and children.
+
+One way of doing this is by means of source C<+Parent>
+(L<< /Option Values Collection (C<sources>) >>: this allows I<absorbing>
+configurations from a parent inside a child. Every options that has been
+set in the parent command is copied into the child, subject to
+priorities etc.
+
+Another way of doing this is by I<inheriting> options specifications by
+a child from its parent. This makes the parent's option appear also as a
+child's option, which might ease the life of users because they would
+not need to set options exactly in the I<first> command that supports
+it.
+
+The latter behaviour has two halves: one in the parent and the other in
+the child command.
+
+Parent commands can declare which option specifications can be inherited
+by children by setting C<transmit> to a true value in the option's
+speficiation. By default, options are I<not> set as inheritable.
+
+Children can then inherit options by using string or regular expressions
+instead of hash references. In this way, a child can cherry-pick which
+options from the parent make sense and ignore the other ones.
+
+Consider the following example:
+
+   my $app = {
+      aliases => [ 'main' ],
+      options => [
+         {
+            getopt => 'transmittable',
+            help => 'option available in parent, transmit => 1',
+            transmit => 1,
+         },
+         {
+            getopt => 'parent-only',
+            help => 'option available in parent only',
+            transmit => 0,
+         },
+      ],
+      children => [
+         {
+            aliases => [ 'foo' ],
+            options => [ '+parent',
+               {
+                  getopt => 'child-only',
+                  help => 'option available in child only',
+               },
+            ],
+            execute => sub ($self) {
+               say "foo says: ",
+                  $self->config('transmittable') ? 'transmit' : 'no way';
+            },
+         },
+      ],
+   };
+
+Option C<transmittable> in the parent command can be inherited, while
+C<parent-only> can not. Child command C<foo> does indeed inherit the
+option, thanks to the C<+parent> option that allows inheriting
+everything that the parent sets with a true C<transmit>.
+
+An example run of the application above makes it clear that the option
+can be set both in the parent and in the child command:
+
+   $ perl prova.pl foo
+   foo says: no way
+
+   # command-line option is set in parent command
+   $ perl prova.pl --transmittable foo
+   foo says: transmit
+
+   # command-line option is set in child command
+   $ perl prova.pl foo --transmittable
+   foo says: transmit
+
+Option string C<+parent> inherits everything; it's also possible to set
+exact strings or regular expressions (also as strings). In case of
+regular expressions, it's furthermore possible for the I<parent> to
+restrict inheritance of an option only when the name is provided exactly
+(i.e. not as a regular expression); this is done setting
+C<transmit_exact> in the option's specification in the parent.
 
 =head2 Accessing Collected Option Values
 
