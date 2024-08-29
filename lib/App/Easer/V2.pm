@@ -351,6 +351,10 @@ sub getopt_config ($self, @n) {
    return $value->@*;
 } ## end sub getopt_config
 
+# This source is not supposed to accept "options", although it might in
+# the future, e.g. to set a specific getopt_config instead of setting it
+# as a general parameter. On the other hand, it does focus on processing
+# $args
 sub source_CmdLine ($self, $ignore, $args) {
    my @args = $args->@*;
 
@@ -392,14 +396,18 @@ sub name_for_option ($self, $o) {
    return '~~~';
 } ## end sub name_for_option
 
-sub source_Default ($self, $include_inherited = 0, @ignore) {
+sub source_Default ($self, $opts, @ignore) {
+   my %opts = $opts->@*;
+   my $include_inherited = $opts{include_inherited};
    return {
       map { $self->name_for_option($_) => $_->{default} }
       grep { exists $_->{default} }
       grep { $include_inherited || !$_->{inherited} } $self->options
    };
 }
-sub source_FinalDefault ($self, @i) { $self->source_Default(1, @i) }
+sub source_FinalDefault ($self, @i) {
+   return $self->source_Default([ include_inherited => 1]);
+}
 
 sub source_FromTrail ($self, $trail, @ignore) {
    my $conf = $self->config_hash;
@@ -429,7 +437,9 @@ sub environment_variable_name ($self, $ospec) {
 } ## end sub environment_variable_name
 
 
-sub source_Environment ($self, $include_inherited = 0, @ignore) {
+sub source_Environment ($self, $opts, @ignore) {
+   my %opts = $opts->@*;
+   my $include_inherited = $opts{include_inherited};
    return {
       map {
          my $en = $self->environment_variable_name($_);
@@ -440,7 +450,9 @@ sub source_Environment ($self, $include_inherited = 0, @ignore) {
       } grep { $include_inherited || !$_->{inherited} } $self->options
    };
 } ## end sub source_Environment
-sub source_FinalEnvironment ($s, @i) { $s->source_Environment(1, @i) }
+sub source_FinalEnvironment ($self, @i) {
+   return $self->source_Environment([ include_inherited => 1 ]);
+}
 
 sub source_JsonFileFromConfig ($self, $key, @ignore) {
    $key = $key->[0] // 'config';
