@@ -383,14 +383,6 @@ sub source_CmdLine ($self, $ignore, $args) {
       $name_for{$go_name} = $official_name if $go_name ne $official_name;
    }
 
-   my %option_for;
-   my @specs = map {
-      my $go = $_->{getopt};
-      ref($go) eq 'ARRAY'
-        ? ($go->[0] => sub { $go->[1]->(\%option_for, @_) })
-        : $go;
-     }
-     grep { exists $_->{getopt} } $self->options;
    Getopt::Long::GetOptionsFromArray(\@args, \%option_for, @specs)
      or die "bailing out\n";
 
