@@ -222,7 +222,7 @@ sub resolve_options ($self, $spec) {
    return $self->$method(@names);
 } ## end sub resolve_options
 
-sub inherit_options ($self, @names) {  # FIXME there might be bugs
+sub inherit_options ($self, @names) {
    my %got;
    map {
       my @options;
@@ -230,15 +230,18 @@ sub inherit_options ($self, @names) {  # FIXME there might be bugs
          @options = grep { $_->{transmit} // 0 } $self->parent->options;
       }
       else {
-         my $namerx   = qr{\A(?:$_)\z};
+         my $name_exact = ref($_) ? $_ : undef;
+         my $name_rx    = qr{\A(?:$_)\z};
          my $ancestor = $self->parent;
          while ($ancestor) {
             push @options, my @pass =  # FIXME something's strange here
               grep {
                my $name = $self->name_for_option($_);
-               (!$_->{transmit_exact})
-                 && $name =~ m{$namerx}
-                 && !$got{$name};  # FIXME !$got{$name}++ maybe?
+               (! $got{$name}++)     # inherit once only
+               && (
+                  (defined($name_exact) && $name eq $name_exact)
+                  || (! $_->{transmit_exact} && $name =~ m{$name_rx})
+               );
               } $ancestor->options;
             $ancestor = $ancestor->parent;
          } ## end while ($ancestor)
