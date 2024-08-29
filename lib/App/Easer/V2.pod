@@ -1338,6 +1338,39 @@ C<priority>. This means that the following examples are equivalent:
    # priority in meta-options first-arguments hash reference
    [ '+FromTrail', {priority => 90}, qw< defaults foo baz > ],
 
+After the C<$locator> has been resolved to a sub reference
+C<$located_sub>, and the first item in C<@args> has been analyzed and
+possibly removed (because it contains I<meta-options> as described
+above), the sub reference is invoked like follows:
+
+   $located_sub->($command, $args_arrayref, $inputs_arrayref);
+
+where:
+
+=over
+
+=item *
+
+C<$command> is the instance of the (sub-)command under analysis
+
+=item *
+
+C<$args_arrayref> is a reference to an array containing the remaining
+arguments provided via C<@args> in the source definition (when the array
+reference format C<[ $locator @args ]> form has been used). This array
+reference does I<not> contain the I<meta-options>.
+
+=item *
+
+C<$inputs_arrayref> is a reference to an array holding the input
+command-line parameters (at least what's left of them after processing
+by previous sources).
+
+=back
+
+Unless the source is supposed to process command-line arguments, it
+should just ignore the third parameter and focus on the first two.
+
 It's not necessary to set the C<sources> explicitly, as by default the
 following configuration is assumed:
 
