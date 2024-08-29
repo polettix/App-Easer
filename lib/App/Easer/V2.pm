@@ -400,18 +400,23 @@ sub source_CmdLine ($self, $ignore, $args) {
       if $strict && @args && $args[0] =~ m{\A - . }mxs;
 
    # remap names where the official one is different from the getopt one
-   my %renamed;
-   for my $go_name (sort { $a cmp $b } keys %name_for) {
-      next unless exists $option_for{$go_name};
-      my $official_name = $name_for{$go_name};
-      $renamed{$official_name} = delete($option_for{$go_name});
-   }
-   %option_for = (%option_for, %renamed);
+   $self->_rename_options_inplace(\%option_for, \%name_for);
 
    $self->_last_cmdline( { option_for => \%option_for, args => \@args });
 
    return (\%option_for, \@args);
 } ## end sub source_CmdLine
+
+sub _rename_options_inplace ($self, $collected, $name_for) {
+   my %renamed;
+   for my $go_name (sort { $a cmp $b } keys $name_for->%*) {
+      next unless exists $collected->{$go_name};
+      my $official_name = $name_for->{$go_name};
+      $renamed{$official_name} = delete($collected->{$go_name});
+   }
+   $collected->{$_} = $renamed{$_} for keys %renamed;
+   return $self;
+}
 
 sub source_LastCmdLine ($self, @ignore) {
    my $last = $self->_last_cmdline or return {};
