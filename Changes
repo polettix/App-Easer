@@ -1,6 +1,24 @@
 {{$NEXT}}
-   - Remove bug in using Params::Validate, addresses
+
+2.007002  2024-08-29 18:40:59 CEST
+   - Add default help message for commands, addresses GH #6
+     https://github.com/polettix/App-Easer/issues/6
+   - Fix exception when asking for help on builtin commands, addresses GH #7
+     https://github.com/polettix/App-Easer/issues/7
+   - Fix documentation for using residual_args, addresses GH #8
+     https://github.com/polettix/App-Easer/issues/8
+   - Fix automatic truncation of options with hyphens, addresses GH #9
+     https://github.com/polettix/App-Easer/issues/9
+   - Remove bug in using Params::Validate, addresses GH #11
      https://github.com/polettix/App-Easer/issues/11, still no test.
+   - Allow for shorter help message via "usage", addresses GH #12
+     https://github.com/polettix/App-Easer/issues/12
+   - Improve documentation and user interface for options with transmit=>1,
+     addresses GH #13 https://github.com/polettix/App-Easer/issues/13
+   - Add documentation for "sources" callbacks, addresses GH #14
+     https://github.com/polettix/App-Easer/issues/14
+   - Fix using the right name when specified and different from getopt,
+     addresses GH #15 https://github.com/polettix/App-Easer/issues/15
    - Fix help message for multi-valued defaults
    - Fix detecting sub-commands with registered stuff (used in bundling)
 
