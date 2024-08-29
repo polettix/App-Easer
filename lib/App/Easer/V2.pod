@@ -1376,10 +1376,9 @@ higher-level configuration C<environment_prefix> and the option's name
 in case it is set to value C<1> exactly.
 
 This source expliticly ignores I<inherited> options, to prevent
-overwriting previously set options. It is possible to override this by
-passing a true value when calling the source method, like this:
+overwriting previously set options. It is possible to override this:
 
-   [ '+Environment', 1 ]
+   [ '+Environment', include_inherited => 1 ]
 
 Another alternative to do this is use C<+FinalEnvironment>.
 
@@ -1399,10 +1398,9 @@ sub-commands).
 Get a default value from the C<default> sub-key of the option.
 
 This source expliticly ignores I<inherited> options, to prevent
-overwriting previously set options. It is possible to override this by
-passing a true value when calling the source method, like this:
+overwriting previously set options. It is possible to override this:
 
-   [ '+Default', 1 ]
+   [ '+Default', include_inherited => 1 ]
 
 Another alternative to do this is use C<+FinalDefault>.
 
