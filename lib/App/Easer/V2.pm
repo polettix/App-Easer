@@ -365,6 +365,24 @@ sub source_CmdLine ($self, $ignore, $args) {
    require Getopt::Long;
    Getopt::Long::Configure('default', $self->getopt_config);
 
+   my (%option_for, @specs, %name_for);
+   for my $option ($self->options) {
+      next unless exists($option->{getopt});
+      my $go = $option->{getopt};
+      if (ref($go) eq 'ARRAY') {
+         my ($string, $callback) = $go->@*;
+         push @specs, $string, sub { $callback->(\%option_for, @_) };
+         $go = $string;
+      }
+      else {
+         push @specs, $go;
+      }
+
+      my ($go_name) = $go =~ m{\A(\w[-\w]*)}mxs;
+      my $official_name = $self->name_for_option($option);
+      $name_for{$go_name} = $official_name if $go_name ne $official_name;
+   }
+
    my %option_for;
    my @specs = map {
       my $go = $_->{getopt};
@@ -380,6 +398,15 @@ sub source_CmdLine ($self, $ignore, $args) {
    my $strict = !$self->allow_residual_options;
    die "bailing out (allow_residual_options is false and got <@args>)"
       if $strict && @args && $args[0] =~ m{\A - . }mxs;
+
+   # remap names where the official one is different from the getopt one
+   my %renamed;
+   for my $go_name (sort { $a cmp $b } keys %name_for) {
+      next unless exists $option_for{$go_name};
+      my $official_name = $name_for{$go_name};
+      $renamed{$official_name} = delete($option_for{$go_name});
+   }
+   %option_for = (%option_for, %renamed);
 
    $self->_last_cmdline( { option_for => \%option_for, args => \@args });
 
