@@ -230,14 +230,15 @@ sub inherit_options ($self, @names) {
          @options = grep { $_->{transmit} // 0 } $self->parent->options;
       }
       else {
-         my $name_exact = ref($_) ? $_ : undef;
+         my $name_exact = ref($_) ? undef : $_;
          my $name_rx    = qr{\A(?:$_)\z};
          my $ancestor = $self->parent;
          while ($ancestor) {
             push @options, my @pass =  # FIXME something's strange here
               grep {
                my $name = $self->name_for_option($_);
-               (! $got{$name}++)     # inherit once only
+               ($_->{transmit} // 0)
+               && (! $got{$name}++)     # inherit once only
                && (
                   (defined($name_exact) && $name eq $name_exact)
                   || (! $_->{transmit_exact} && $name =~ m{$name_rx})
