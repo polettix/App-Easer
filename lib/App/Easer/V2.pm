@@ -80,6 +80,7 @@ package App::Easer::V2::Command;
 use Scalar::Util 'blessed';
 use List::Util 'any';
 use English '-no_match_vars';
+use Scalar::Util qw< weaken >;
 
 # some stuff can be managed via a hash reference kept in a "slot",
 # allowing for overriding should be easy either with re-defining the
@@ -107,6 +108,19 @@ sub _rwa ($self, @n) {
 sub _rwad ($self, @n) {
    my $aref = $self->_rwn((caller(1))[3] =~ s{.*::}{}rmxs, @n) // [];
    return wantarray ? $aref->@* : [$aref->@*];
+}
+
+sub _rw_prd ($self, @n) {
+   my $slot = $self->slot;
+   my $name = (caller(1))[3] =~ s{.*::}{}rmxs;
+   if (@n) {
+      $slot->{$name} = $n[0];
+   }
+   elsif (ref(my $ref_to_default = $slot->{$name})) {
+      my $parent = $self->parent;
+      $slot->{$name} = $parent ? $parent->$name : $$ref_to_default;
+   }
+   return $slot->{$name};
 }
 
 # these "attributes" would point to stuff that is normally "scalar" and
@@ -144,6 +158,8 @@ sub _last_cmdline ($self, @r) { $self->_rw(@r) }
 sub _sources ($self, @r) { $self->_rwn(sources => @r) }
 sub usage ($self, @r) { $self->_rw(@r) }
 
+sub config_hash_key ($self, @r) { $self->_rw_prd(@r) }
+
 sub is_root ($self) { ! defined($self->parent) }
 sub root ($self) {
    my $slot = $self->slot;
@@ -154,6 +170,28 @@ sub root ($self) {
       }
       $retval;
    };
+}
+
+sub child ($self, @newval) {
+   my $slot = $self->slot;
+   if (@newval) {
+      $slot->{child} = $newval[0];
+      weaken($slot->{child});
+   }
+   return $slot->{child};
+}
+sub is_leaf ($self) { ! defined($self->child) }
+sub leaf ($self) {
+   my $slot = $self->slot;
+   if (! exists($slot->{leaf})) {
+      my $retval = $self;
+      while (defined(my $parent = $retval->child)) {
+         $retval = $parent;
+      }
+      $slot->{leaf} = $retval;
+      weaken($slot->{leaf});
+   }
+   return $slot->{leaf};
 }
 
 
@@ -259,6 +297,7 @@ sub new ($pkg, @args) {
       auto_environment       => 0,
       children               => [],
       children_prefixes      => [$pkg . '::Cmd'],
+      config_hash_key        => \'merged',
       default_child          => 'help',
       environment_prefix     => '',
       fallback_to            => undef,
@@ -278,7 +317,7 @@ sub new ($pkg, @args) {
    return $self;
 } ## end sub new
 
-sub merge_hashes ($self, @hrefs) {
+sub merge_hashes ($self, @hrefs) { # FIXME this seems way more complicated than needed
    my (%retval, %is_overridable);
    for my $href (@hrefs) {
       for my $src_key (keys $href->%*) {
@@ -292,15 +331,17 @@ sub merge_hashes ($self, @hrefs) {
    return \%retval;
 } ## end sub merge_hashes
 
-# collect options values from $args (= [...]) & other sources
-# sets own configuration and residual_args
-# acts based on what is provided by method options()
-sub _collect($self, $sources, @args) {
+sub _collect ($self, $sources, @args) {
    my @sequence;    # stuff collected from Sources, w/ context
-   my @slices;      # ditto, no context
-   my $config = {};      # merged configuration
    my @residual_args;    # what is left from the @args at the end
 
+   # this holds all that's been collected up to now by the ancestors, it
+   # is initialized with the corresponding value in the parent, if any
+   my $e_provider = $self->parent // $self;
+   my $p_eslices = $e_provider->config_hash(1)->{all_eslices_at} // {};
+   my %all_eslices_at = $p_eslices->%*;
+
+   my %command_eslices_at;
    my $last_priority = 0;
    for my $source ($sources->@*) {
       my ($src, @opts) = ref($source) eq 'ARRAY' ? $source->@* : $source;
@@ -316,14 +357,45 @@ sub _collect($self, $sources, @args) {
       my ($slice, $residuals) = $sub->($self, \@opts, \@args);
       push @residual_args, $residuals->@* if defined $residuals;
       $last_priority = my $priority = $meta->{priority} //= $last_priority + 10;
-      push @sequence, [$priority, $src, \@opts, $locator, $slice];
+
+      my $eslice = [$priority, $src, \@opts, $locator, $slice];
+
+      # new way of collecting the aggregated configuration
+      # the merge takes into account priorities across all command layers,
+      # this function encapsulates getting all of them
+      unshift(($all_eslices_at{$priority} //= [])->@*, $eslice);
+      unshift(($command_eslices_at{$priority} //= [])->@*, $eslice);
+      my $matrix_config = $self->merge_hashes(
+         map { $_->[-1] }                 # take slice out of eslice
+         map { $all_eslices_at{$_}->@* }  # unroll all eslices
+         sort { $a <=> $b }               # sort by priority
+         keys(%all_eslices_at)            # keys is the priority
+      );
+
+      # older way of collecting the aggregated configuration
+      push @sequence, $eslice;
       for (my $i = $#sequence; $i > 0; --$i) {
          last if $sequence[$i - 1][0] <= $sequence[$i][0];
          @sequence[$i - 1, $i] = @sequence[$i, $i - 1];
       }
-      $config = $self->merge_hashes(map {$_->[-1]} @sequence);
-      $self->_rwn(config => {merged => $config, sequence => \@sequence});
+      my $legacy_config = $self->merge_hashes(map {$_->[-1]} @sequence);
+
+      # save configuration at each step, so that each following source
+      # can take advantage of configurations collected so far. This is
+      # important for e.g. sources that load options from files whose
+      # path is provided as an option itself.
+      $self->_rwn(
+         config => {
+            merged             => $legacy_config,
+            merged_legacy      => $legacy_config,
+            merged_v2_008      => $matrix_config,
+            sequence           => \@sequence,
+            all_eslices_at     => \%all_eslices_at,
+            command_eslices_at => \%command_eslices_at,
+         }
+      );
    } ## end for my $source ($self->...)
+   #App::Easer::V2::d(config => $self->_rwn('config'));
 
    # return what's left
    return \@residual_args;
@@ -516,7 +588,7 @@ sub source_Parent ($self, @ignore) {
 sub config_hash ($self, $blame = 0) {
    my $config = $self->_rwn('config') // {};
    return $config if $blame;
-   return $config->{merged} // {};
+   return $config->{$self->config_hash_key} // {};
 }
 
 # get one or more specific configurtion values
@@ -532,6 +604,17 @@ sub set_config ($self, $key, @value) {
    $hash->{$key} = $value[0] if @value;
    return $self;
 } ## end sub set_config
+
+# totally replace whatever has been collected at this level
+sub set_config_hash ($self, $new, $full = 0) {
+   if (! $full) {
+      my $previous = $self->_rwn('config') // {};
+      my $key = $self->config_hash_key;
+      $new = { $previous->%*, merged => $new, override => $new };
+   }
+   $self->_rwn(config => $new);
+   return $self;
+}
 
 # (intermediate) commit collected options values, called after collect ends
 sub commit ($self, @n) {
@@ -768,6 +851,7 @@ sub instantiate ($sop, $class, @args) {
 
 sub _reparent ($self, $child) {
    $child->parent($self);
+   $self->child($child); # saves a weak reference to $child
 
    # 2024-08-27 propagate sources configurations
    if (! ref($child->_sources)) { # still default, my need to set it

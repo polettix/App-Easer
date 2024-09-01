@@ -1176,6 +1176,24 @@ the C<Description> section.
 Set a new value for a configuration, overriding what has been found out
 from the several input sources.
 
+=item C<set_config_hash>
+
+   $self->set_config_hash($new_merged_config);
+   $self->set_config_hash($new_overall, 1);
+
+Set a new value for the whole configuration hash.
+
+In the first form (no second parameter, or second parameter set to a
+false value), only the I<merged> configuration hash is set, i.e. what is
+returned by a call like C<< $instance->configuration_hash >>. In
+practical terms, it replaces what can be taken when setting
+L</config_hash_key> to either C<merged> (the default value) or
+C<override>.
+
+The second form allows setting the whole underlying data structure that
+can be taken by a call like C<< $instance->configuration_hash(1) >>.
+This allows messing up with the whole process.
+
 =item C<slot>
 
    my $hashref = $self->slot;
@@ -1775,6 +1793,40 @@ Get all arguments from the command line that were not parsed (and hence
 I<left> for a sub-command or just unparsed).
 
 =back
+
+The I<merged> configuration returned by C<config_hash> is regulated by
+option C<config_hash_key>. As of release C<2.008>, it's possible to set
+it to one of the following:
+
+=over
+
+=item * C<merged>
+
+the default value, providing whatever is coded as default. As of version
+C<v2.008> this corresponds to C<merged_legacy> below.
+
+=item * C<merged_legacy>
+
+provide a backwards-compatible behaviour (pre-C<v2.008>).
+
+=item * C<merged_v2_008>
+
+use a different way of coalescing values across different
+commands/sub-commands. The configuration is collected taking into
+account the priority of each source; for same-priority sources,
+sub-commands take precedence over ancestors. In this mode there is an
+implicit C<+Parent> as every command level is always taken into
+consideration.
+
+=item * C<override>
+
+use whatever has been set explicity via L</set_config_hash>. Note that
+setting a configuration explicitly means that the value pointed at by
+key C<merged> is changed too.
+
+=back
+
+See also L</set_config> and L</set_config_hash>.
 
 
 =head1 MIXED STUFF

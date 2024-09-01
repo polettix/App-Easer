@@ -7,7 +7,15 @@ use Test::More;
 use Exporter 'import';
 use Data::Dumper;
 
-our @EXPORT = ('test_run');
+our @EXPORT = qw< test_run executor >;
+
+sub executor ($cb = undef) {
+   return sub ($self) {
+      LocalTester::command_execute($self);
+      $cb->($self) if $cb;
+      return $self->name;
+   };
+}
 
 sub test_run ($app, $args, $env, $expected_command = 'MAIN') {
    my ($stdout, $stderr, @result, $clean_run, $exception);
@@ -64,8 +72,10 @@ sub name_is ($self, $expected, $test_name = undef) {
 }
 
 sub conf_is ($self, $expected, $name = 'configuration') {
+   local $Data::Dumper::Indent = 1;
+   local $Data::Dumper::Sortkeys = 1;
    is_deeply $self->{conf}, $expected, $name
-      or diag Dumper({ got => $self->{conf}, expected => $expected});
+      or diag Dumper({ got => $self->{conf}, expected => $expected });
    return $self;
 }
 
