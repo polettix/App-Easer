@@ -56,31 +56,31 @@
    "provides" : {
       "App::Easer" : {
          "file" : "lib/App/Easer.pm",
-         "version" : "2.007002"
+         "version" : "2.007003"
       },
       "App::Easer::V1" : {
          "file" : "lib/App/Easer/V1.pm",
-         "version" : "2.007002"
+         "version" : "2.007003"
       },
       "App::Easer::V2" : {
          "file" : "lib/App/Easer/V2.pm",
-         "version" : "2.007002"
+         "version" : "2.007003"
       },
       "App::Easer::V2::Command" : {
          "file" : "lib/App/Easer/V2.pm",
-         "version" : "2.007002"
+         "version" : "2.007003"
       },
       "App::Easer::V2::Command::Commands" : {
          "file" : "lib/App/Easer/V2.pm",
-         "version" : "2.007002"
+         "version" : "2.007003"
       },
       "App::Easer::V2::Command::Help" : {
          "file" : "lib/App/Easer/V2.pm",
-         "version" : "2.007002"
+         "version" : "2.007003"
       },
       "App::Easer::V2::Command::Tree" : {
          "file" : "lib/App/Easer/V2.pm",
-         "version" : "2.007002"
+         "version" : "2.007003"
       }
    },
    "release_status" : "testing",
@@ -95,7 +95,7 @@
          "web" : "https://github.com/polettix/App-Easer"
       }
    },
-   "version" : "2.007002",
+   "version" : "2.007003",
    "x_contributors" : [
       "Flavio Poletti <flavio@polettix.it>"
    ],

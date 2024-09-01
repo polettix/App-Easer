@@ -1,5 +1,8 @@
 {{$NEXT}}
 
+2.007003  2024-09-01 23:26:30 CEST
+   - Add "matrix merge" for collecting options along the way
+
 2.007002  2024-08-29 18:40:59 CEST
    - Add default help message for commands, addresses GH #6
      https://github.com/polettix/App-Easer/issues/6
