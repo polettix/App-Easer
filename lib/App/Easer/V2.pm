@@ -332,16 +332,8 @@ sub merge_hashes ($self, @hrefs) { # FIXME this seems way more complicated than 
 } ## end sub merge_hashes
 
 sub _collect ($self, $sources, @args) {
-   my @sequence;    # stuff collected from Sources, w/ context
    my @residual_args;    # what is left from the @args at the end
 
-   # this holds all that's been collected up to now by the ancestors, it
-   # is initialized with the corresponding value in the parent, if any
-   my $e_provider = $self->parent // $self;
-   my $p_eslices = $e_provider->config_hash(1)->{all_eslices_at} // {};
-   my %all_eslices_at = $p_eslices->%*;
-
-   my %command_eslices_at;
    my $last_priority = 0;
    for my $source ($sources->@*) {
       my ($src, @opts) = ref($source) eq 'ARRAY' ? $source->@* : $source;
@@ -354,30 +346,46 @@ sub _collect ($self, $sources, @args) {
       }
       my $sub = $self->ref_to_sub($locator)
         or die "unhandled source for $locator\n";
+
       my ($slice, $residuals) = $sub->($self, \@opts, \@args);
       push @residual_args, $residuals->@* if defined $residuals;
-      $last_priority = my $priority = $meta->{priority} //= $last_priority + 10;
 
-      my $eslice = [$priority, $src, \@opts, $locator, $slice];
+      # whatever happened in the source, it might have changed the
+      # internals and we need to re-load them from the current config
+      my $latest = $self->_rwn('config');
+      my @sequence = ($latest->{sequence} //= [])->@*;    # legacy
+      my %all_eslices_at = ($latest->{all_eslices_at} // {})->%*; # v2.8
+      my %command_eslices_at = ($latest->{command_eslices_at} // {})->%*;
 
-      # new way of collecting the aggregated configuration
-      # the merge takes into account priorities across all command layers,
-      # this function encapsulates getting all of them
-      unshift(($all_eslices_at{$priority} //= [])->@*, $eslice);
-      unshift(($command_eslices_at{$priority} //= [])->@*, $eslice);
+      # only operate if the source returned something to track
+      if ($slice) {
+         $last_priority = my $priority
+            = $meta->{priority} //= $last_priority + 10;
+
+         my $eslice = [$priority, $src, \@opts, $locator, $slice];
+
+         # new way of collecting the aggregated configuration
+         # the merge takes into account priorities across all command
+         # layers, this function encapsulates getting all of them
+         push(($all_eslices_at{$priority} //= [])->@*, $eslice);
+         push(($command_eslices_at{$priority} //= [])->@*, $eslice);
+
+         # older way of collecting the aggregated configuration
+         push @sequence, $eslice;
+         for (my $i = $#sequence; $i > 0; --$i) {
+            last if $sequence[$i - 1][0] <= $sequence[$i][0];
+            @sequence[$i - 1, $i] = @sequence[$i, $i - 1];
+         }
+      }
+
+      # whatever happened, re-compute the aggregated configuration in the
+      # new "matrix" way and in the legacy way
       my $matrix_config = $self->merge_hashes(
          map { $_->[-1] }                 # take slice out of eslice
          map { $all_eslices_at{$_}->@* }  # unroll all eslices
          sort { $a <=> $b }               # sort by priority
          keys(%all_eslices_at)            # keys is the priority
       );
-
-      # older way of collecting the aggregated configuration
-      push @sequence, $eslice;
-      for (my $i = $#sequence; $i > 0; --$i) {
-         last if $sequence[$i - 1][0] <= $sequence[$i][0];
-         @sequence[$i - 1, $i] = @sequence[$i, $i - 1];
-      }
       my $legacy_config = $self->merge_hashes(map {$_->[-1]} @sequence);
 
       # save configuration at each step, so that each following source
@@ -579,6 +587,27 @@ sub source_Parent ($self, @ignore) {
    my $parent = $self->parent or return {};
    return $parent->config_hash(0);
 }
+
+sub source_ParentSlices ($self, @ignore) {
+   my $parent = $self->parent or return; # no Parent, no Party
+
+   # will hold the result of acquiring stuff from the parent
+   my %all_eslices_at;
+
+   # get all stuff from parent, keeping priorities.
+   my $pslices_at = $parent->config_hash(1)->{all_eslices_at} // {};
+   for my $priority (keys($pslices_at->%*)) {
+      my $eslices = $all_eslices_at{$priority} //= [];
+      push $eslices->@*, $pslices_at->{$priority}->@*;
+   }
+
+   my %latest = ($self->_rwn('config') // {})->%*;
+   $latest{all_eslices_at} = \%all_eslices_at;
+   $self->_rwn(config => \%latest);
+
+   return;
+}
+
 
 
 # get the assembled config for the command. It supports the optional

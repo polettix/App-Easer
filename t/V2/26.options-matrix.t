@@ -113,13 +113,10 @@ test_run($app, [ qw< --fcmd1 FOO foo > ], { qw< FENV AHOY > }, 'foo')
 # change sources from baseline to new approach
 $app->{config_hash_key} = 'merged_v2_008';
 $app->{sources} = {
-   current => [ qw< +CmdLine +Environment +Default=100 > ],
+   current => [ qw< +CmdLine +Environment +Default=100 +ParentSlices> ],
    final   => [ qw< +JsonFileFromConfig=40 > ],
 };
 
-# in merged_v2_008 mode, all options collected from parent commands are
-# also available down the line, in a sort of "automatic +Parent" mode which
-# preserves priorities
 test_run($app, [ qw< > ], { qw< > }, 'MAIN')
    ->no_exceptions('baseline, simple invocation, "matrix-based" opts')
    ->name_is('MAIN')
@@ -129,6 +126,21 @@ test_run($app, [ qw< > ], { qw< > }, 'MAIN')
          fcmd2 => 'this!',
          fcmd3 => 'this!',
          fenv  => 'this!',
+         ffile => 'this!',
+         fdefault => 'this!',
+      }
+   )
+   ;
+
+test_run($app, [ qw< --fcmd1 FOO foo > ], { qw< FENV AHOY > }, 'foo')
+   ->no_exceptions('first-level subcommand, one arg up, env set')
+   ->name_is('foo')
+   ->conf_is(
+      {
+         fcmd1 => 'FOO',
+         fcmd2 => 'this!',
+         fcmd3 => 'this!',
+         fenv  => 'AHOY',
          ffile => 'this!',
          fdefault => 'this!',
       }
