@@ -56,34 +56,34 @@
    "provides" : {
       "App::Easer" : {
          "file" : "lib/App/Easer.pm",
-         "version" : "2.007003"
+         "version" : "2.007004"
       },
       "App::Easer::V1" : {
          "file" : "lib/App/Easer/V1.pm",
-         "version" : "2.007003"
+         "version" : "2.007004"
       },
       "App::Easer::V2" : {
          "file" : "lib/App/Easer/V2.pm",
-         "version" : "2.007003"
+         "version" : "2.007004"
       },
       "App::Easer::V2::Command" : {
          "file" : "lib/App/Easer/V2.pm",
-         "version" : "2.007003"
+         "version" : "2.007004"
       },
       "App::Easer::V2::Command::Commands" : {
          "file" : "lib/App/Easer/V2.pm",
-         "version" : "2.007003"
+         "version" : "2.007004"
       },
       "App::Easer::V2::Command::Help" : {
          "file" : "lib/App/Easer/V2.pm",
-         "version" : "2.007003"
+         "version" : "2.007004"
       },
       "App::Easer::V2::Command::Tree" : {
          "file" : "lib/App/Easer/V2.pm",
-         "version" : "2.007003"
+         "version" : "2.007004"
       }
    },
-   "release_status" : "testing",
+   "release_status" : "stable",
    "resources" : {
       "bugtracker" : {
          "web" : "https://github.com/polettix/App-Easer/issues"
@@ -95,13 +95,12 @@
          "web" : "https://github.com/polettix/App-Easer"
       }
    },
-   "version" : "2.007003",
+   "version" : "2.007004",
    "x_contributors" : [
       "Flavio Poletti <flavio@polettix.it>"
    ],
    "x_generated_by_perl" : "v5.38.2",
    "x_serialization_backend" : "Cpanel::JSON::XS version 4.38",
-   "x_spdx_expression" : "Apache-2.0",
-   "x_static_install" : 1
+   "x_spdx_expression" : "Apache-2.0"
 }
 

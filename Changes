@@ -1,5 +1,9 @@
 {{$NEXT}}
 
+2.007004  2024-09-08 17:45:35 CEST
+   - Final touches to the new behaviour for release 2.008, this should
+     be the last trial release hopefully
+
 2.007003  2024-09-01 23:26:30 CEST
    - Add "matrix merge" for collecting options along the way
 
