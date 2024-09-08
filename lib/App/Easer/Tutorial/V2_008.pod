@@ -1551,7 +1551,7 @@ actually I<doing> something when we determine that the non-leaf command
 should be run. And yet this is not enough, as the default is to call
 C<usage> in case no sub-command can be found.
 
-=head2 Setting a C<default_child> different fro C<usage>
+=head3 Setting a C<default_child> different fro C<usage>
 
 It turns out this behaviour is not hardcoded, but the effect of the
 default on the C<default_child> key in the applications' definition. As
@@ -1988,7 +1988,7 @@ object instances, then save them as configuration options that are set
 in the leaf configuration using method C<leaf> to retrieve it (e.g. from
 the root command) and method C<set_config> to set the object.
 
-=head4 Use shared state
+=head3 Use shared state
 
 If your application is small(ish) and defined in a single hash as all
 eexamples so far, it's still possible to use global variables or lexical
