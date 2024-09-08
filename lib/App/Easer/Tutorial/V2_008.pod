@@ -279,7 +279,7 @@ C<usage>), C<commands>, and C<tree>.
 
 Let's run the program without any option:
 
-   $ ./crud
+   $ crud
    A command for CRUD operations over a JSON file
    
    Options:
@@ -306,7 +306,7 @@ calling them, so it makes sense that its default behaviour is to call
 its own C<usage> sub-command. The output would be the same by calling
 C<usage> directly as a sub-command:
 
-   $ ./crud usage
+   $ crud usage
    # ... same output as above
 
 The C<usage> command is actually an alias for the C<help>. Altough they
@@ -314,7 +314,7 @@ are coalesced together, they actually behave slightly differently, with
 C<help> being more verbose and also printing out whatever is provided in
 the C<description>:
 
-   # ./crud help
+   # crud help
    A command for CRUD operations over a JSON file
    
    Description:
