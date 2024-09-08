@@ -981,6 +981,20 @@ to achieve this goal.
 This method is not meant to be called directly and is subject to become
 a private method, so its usage is discouraged and not future-proof.
 
+=item C<inject_config>
+
+   $self->inject_configs($hash_of_configurations);
+   $self->inject_configs($hash_of_configurations, $priority);
+
+Add an additional hash reference of configurations to the ones collected
+via sources. This is most useful within a C<commit> callback/method,
+where options have been collected for the specific command level and
+allows applying custom ways of setting default values without the need
+to code an ad-hoc source.
+
+Default priority is set to 1000 (which is normally "very later", i.e.
+considered only as a fallback after everything else).
+
 =item C<instantiate>
 
    my $instance = $self_or_package->instantiate($class, @args);
@@ -1809,14 +1823,12 @@ C<v2.008> this corresponds to C<merged_legacy> below.
 
 provide a backwards-compatible behaviour (pre-C<v2.008>).
 
-=item * C<merged_v2_008>
+=item * C<v2.008>
 
 use a different way of coalescing values across different
 commands/sub-commands. The configuration is collected taking into
 account the priority of each source; for same-priority sources,
-sub-commands take precedence over ancestors. In this mode there is an
-implicit C<+Parent> as every command level is always taken into
-consideration.
+sub-commands take precedence over ancestors.
 
 =item * C<override>
 

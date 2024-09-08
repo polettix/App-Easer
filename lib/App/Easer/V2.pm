@@ -209,15 +209,19 @@ sub sources ($self, @new) {
       state $default_array =
          [ qw< +CmdLine +Environment +Parent=70 +Default=100 > ];
       state $default_hash  = {
-         current => [ qw< +CmdLine +Parent > ],
-         final =>
-            [ qw< +LastCmdLine +Parent +FinalEnvironment +FinalDefault > ],
+         current => [ qw< +CmdLine +Environment +Default +ParentSlices > ],
+         final   => [ ],
+      };
+      state $default_hash_v2_008 = {
+         current => [ qw< +CmdLine +Environment +Default +ParentSlices > ],
+         final   => [ ],
       };
       $r = $slot->{sources};
       $r = $slot->{sources} =
-         ! defined($r)           ? Carp::confess()
-         : $r eq 'default-array' ? $default_array
-         : $r eq 'default-hash'  ? $default_hash
+         ! defined($r)            ? Carp::confess()
+         : $r eq 'default-array'  ? $default_array
+         : $r eq 'default-hash'   ? $default_hash
+         : $r eq 'v2.008'         ? $default_hash_v2_008
          :                         Carp::confess()
          unless ref($r); # string-based, get either default
    }
@@ -334,6 +338,7 @@ sub merge_hashes ($self, @hrefs) { # FIXME this seems way more complicated than 
 sub _collect ($self, $sources, @args) {
    my @residual_args;    # what is left from the @args at the end
 
+   my $slot = $self->slot;
    my $last_priority = 0;
    for my $source ($sources->@*) {
       my ($src, @opts) = ref($source) eq 'ARRAY' ? $source->@* : $source;
@@ -352,7 +357,7 @@ sub _collect ($self, $sources, @args) {
 
       # whatever happened in the source, it might have changed the
       # internals and we need to re-load them from the current config
-      my $latest = $self->_rwn('config');
+      my $latest = $self->_rwn('config') // {};
       my @sequence = ($latest->{sequence} //= [])->@*;    # legacy
       my %all_eslices_at = ($latest->{all_eslices_at} // {})->%*; # v2.8
       my %command_eslices_at = ($latest->{command_eslices_at} // {})->%*;
@@ -396,7 +401,7 @@ sub _collect ($self, $sources, @args) {
          config => {
             merged             => $legacy_config,
             merged_legacy      => $legacy_config,
-            merged_v2_008      => $matrix_config,
+            'v2.008'           => $matrix_config,
             sequence           => \@sequence,
             all_eslices_at     => \%all_eslices_at,
             command_eslices_at => \%command_eslices_at,
@@ -591,24 +596,19 @@ sub source_Parent ($self, @ignore) {
 sub source_ParentSlices ($self, @ignore) {
    my $parent = $self->parent or return; # no Parent, no Party
 
-   # will hold the result of acquiring stuff from the parent
-   my %all_eslices_at;
+   my $latest = $self->_rwn('config');
+   $self->_rwn(config => ($latest = {})) unless defined $latest;
+   my $all_eslices_at = $latest->{all_eslices_at} //= {};
 
    # get all stuff from parent, keeping priorities.
    my $pslices_at = $parent->config_hash(1)->{all_eslices_at} // {};
    for my $priority (keys($pslices_at->%*)) {
-      my $eslices = $all_eslices_at{$priority} //= [];
+      my $eslices = $all_eslices_at->{$priority} //= [];
       push $eslices->@*, $pslices_at->{$priority}->@*;
    }
 
-   my %latest = ($self->_rwn('config') // {})->%*;
-   $latest{all_eslices_at} = \%all_eslices_at;
-   $self->_rwn(config => \%latest);
-
    return;
 }
-
-
 
 # get the assembled config for the command. It supports the optional
 # additional boolean parameter $blame to get back a more structured
@@ -643,6 +643,23 @@ sub set_config_hash ($self, $new, $full = 0) {
    }
    $self->_rwn(config => $new);
    return $self;
+}
+
+sub inject_configs ($self, $data, $priority = 1000) {
+
+   # we define an on-the-fly source and get it considered through the
+   # regular source-handling mechanism by _collect
+   $self->_collect(
+      [
+         sub ($self, $opts, $args) {
+            my $latest = $self->_rwn('config');
+            $self->_rwn(config => ($latest = {})) unless $latest;
+            my $queue = $latest->{all_eslices_at}{$priority} //= [];
+            push $queue->@*, [ $priority, injection => [], '', $data ];
+            return;
+         },
+      ]
+   );
 }
 
 # (intermediate) commit collected options values, called after collect ends
