@@ -2120,8 +2120,8 @@ own file:
 This setup allows a seamless transition of features from the hash-based
 approach to the method-based one. As long as your application traits are
 plain data (like C<aliases>, C<help>, etc.) it's possible to treat them
-as such and keep them inside the hash; everything different can be
-treated through a method.
+as such and keep them inside the hash provided as argument for C<use>;
+everything different can be treated through a method.
 
 As an example, you might want to keep help as POD in the file, and use
 some POD-handling code to get it. In this case you might want to move
