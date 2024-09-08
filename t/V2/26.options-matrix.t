@@ -111,7 +111,7 @@ test_run($app, [ qw< --fcmd1 FOO foo > ], { qw< FENV AHOY > }, 'foo')
    );
 
 # change sources from baseline to new approach
-$app->{config_hash_key} = 'merged_v2_008';
+$app->{config_hash_key} = 'v2.008';
 $app->{sources} = {
    current => [ qw< +CmdLine +Environment +Default=100 +ParentSlices> ],
    final   => [ qw< +JsonFileFromConfig=40 > ],
