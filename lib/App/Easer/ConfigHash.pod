@@ -1,0 +1,150 @@
+=pod
+
+=for vim
+   vim: tw=72 ts=3 sts=3 sw=3 et ai :
+
+=encoding utf8
+
+=head1 NAME
+
+App::Easer::ConfigHash - Mimic App::Easer's config/config_hash and siblings
+
+=head1 VERSION
+
+This document describes App::Easer::ConfigHash version {{[ version ]}}.
+
+=head1 SYNOPSIS
+
+   use App::Easer::ConfigHash;
+
+   my %some_conf = (...);
+   my $cp = App::Easer::ConfigHash->new(\%some_conf);
+
+   # now $config_provider supports the same configuration interface
+   # as an App::Easer::V2 application
+   my ($this, $that) = $cp->config(qw< this that >);
+   $cp->set_config(and_also => 'something else');
+
+   my $hash = $cp->config_hash;
+   $cp->config_hash(\my %something_different);
+
+=head1 DESCRIPTION
+
+App::Easer::ConfigHash is a companion to L<App::Easer> (and most
+probably L<App::Easer::V2> or following version applications) that
+provide the same interface as L<App::Easer::V2> when it comes to
+configuration.
+
+This can come handy when you start with an L<App::Easer::V2>
+application, then you move to abstract most of the behaviour in a Model
+(along the lines of the MVC development model) and all of a sudden you
+realize that it would be handy to reuse the Model also outside of the
+scope of L<App::Easer>, e.g. in a web application or inside more complex
+use case implementations.
+
+L<App::Easer::V2> makes it easy to reuse the application object also
+from the Model, because it provides handy ways to deal with the input
+configuration with methods like C<config>, C<set_config>,
+C<config_hash>, and C<set_config_hash>. To make it easy to reuse the
+Model also outside the L<App::Easer> application scenario,
+App::Easer::ConfigHash lets you wrap a configuration hash with an object
+that provides the same exact methods with the same exact semantics, so
+that your Model will not tell the difference.
+
+This module was first introduced with L<App::Easer> version 2.010.
+
+=head1 METHODS
+
+=head2 Constructor
+
+=head3 B<new>
+
+   my $object = App::Easer::ConfigHash->new($hash);  # OR
+   my $object = App::Easer::ConfigHash->new($hash, $opts_hash);
+
+Wrap the input C<$hash> in a App::Easer::ConfigHash object.
+
+The optional second parameter is a hash reference with support for the
+following keys:
+
+=over
+
+=item *
+
+C<clone>: both the input C<$hash> and anything passed to
+L</set_config_hash> are first cloned on arrival, so that the original
+C<$hash> is not affected by modifications.
+
+The cloning is done using L<Storable/dclone>.
+
+=back
+
+=head2 App::Easer::V2 Mimics
+
+App::Easer::ConfigHash exposes the following methods, with a semantic
+similar to L<App::Easer::V2>, although not exactly the same. The
+difference should not matter outside the context of L<App::Easer>
+applications though.
+
+=head3 B<config>
+
+   my $value = $self->config($key);   # returns a scalar anyway
+   my @values = $self->config(@keys);
+
+Retrieve collected option values.
+
+=head3 B<config_hash>
+
+   my $merged_hash = $self->config_hash;
+
+Get the configuration as a hash.
+
+As a difference with respect to the L<App::Easer::V2> corresponding
+method, there is no support for an additional boolean input argument.
+
+=head3 B<set_config>
+
+   $self->set_config(foo => 'bar');
+
+Set a new value for a configuration, overriding what has been found out
+from the several input sources.
+
+=head3 B<set_config_hash>
+
+   $self->set_config_hash($new_merged_config);
+
+Set a new value for the whole configuration hash.
+
+As a difference with respect to the L<App::Easer::V2> corresponding
+method, there is no support for an additional boolean input argument.
+
+
+=head1 BUGS AND LIMITATIONS
+
+Minimum perl version 5.24.
+
+Report bugs through GitHub (patches welcome) at
+L<https://github.com/polettix/App-Easer>.
+
+=head1 AUTHOR
+
+Flavio Poletti <flavio@polettix.it>
+
+=head1 COPYRIGHT AND LICENSE
+
+Copyright 2024 by Flavio Poletti <flavio@polettix.it>
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+
+=cut
