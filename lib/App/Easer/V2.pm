@@ -2,7 +2,7 @@ package App::Easer::V2;
 use v5.24;
 use warnings;
 use experimental qw< signatures >;
-{ our $VERSION = '2.008' }
+{ our $VERSION = '2.010' }
 use Carp;
 
 use parent 'Exporter';
