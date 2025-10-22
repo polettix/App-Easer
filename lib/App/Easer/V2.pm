@@ -545,7 +545,8 @@ sub environment_variable_name ($self, $ospec) {
       unshift @prefixes, $instance->environment_prefix // '';
    }
 
-   return uc(join '', @prefixes, $self->name_for_option($ospec));
+   my $name = $self->name_for_option($ospec) =~ s{\W+}{_}rgmxs;
+   return uc(join '', @prefixes, $name);
 } ## end sub environment_variable_name
 
 
@@ -1193,6 +1194,24 @@ sub execute ($self) {
    return 0;
 }
 
+sub real_environment_variable_name ($self, $target, $opt) {
+   my $name = $target->name_for_option($opt);
+   while ($target) {
+      return $target->environment_variable_name($opt)
+         if $opt && ! $opt->{inherited};
+
+      # here, either the option is not available at this level (which is
+      # in any case not possible, as inheritance is always from the direct
+      # parent) or it's inherited. Move on to the parent to look for the
+      # real source of info.
+      $target = $target->parent // die 'weird inheritance, uh?!?';
+      ($opt) = # search the parent's options, very inefficient but still...
+         grep { $target->name_for_option($_) eq $name } $target->options;
+   }
+   # we should never arrive here for real options
+   return;
+}
+
 sub collect_help_for ($self, $target, $mode = 'help') {
    my @stuff;
 
@@ -1246,7 +1265,7 @@ sub collect_help_for ($self, $target, $mode = 'help') {
                map { sprintf "%15s                %s\n", '', $_ } @lines;
             } ## end if (exists $opt->{getopt...})
 
-            if (defined(my $env = $self->environment_variable_name($opt))) {
+            if (defined(my $env = $self->real_environment_variable_name($target, $opt))) {
                push @stuff, sprintf "%15s   environment: %s\n", '', $env;
             }
 
