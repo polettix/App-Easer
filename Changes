@@ -1,5 +1,11 @@
 {{$NEXT}}
 
+2.014  2025-10-22 23:55:03 CEST
+   - Fix environment variable name exposure in help, accounting for
+     environment_prefix at all levels
+   - Fix environment variable name generation, turning runs of "\W"
+     characters (e.g. hyphens) each into a single upperscore.
+
 2.012  2024-11-28 08:25:33 CET
    - Fix expansion of version in POD when releasing, extending to all POD
 
