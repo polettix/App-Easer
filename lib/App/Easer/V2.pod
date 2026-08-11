@@ -566,7 +566,7 @@ examples are aimed at producing the same application:
    use App::Easer::V2 '-command';
    sub aliases ($self) { return [qw< this that >] }
    sub help ($self) { return 'this is the application, but also that' }
-   sub options ($self) { [ { getopt => 'foo|f=s', default => 'bar' } ] }
+   sub options ($self) { { getopt => 'foo|f=s', default => 'bar' } }
    sub execute ($self) {
       say 'foo is ', $self->config('foo');
       return 0;
@@ -1278,6 +1278,24 @@ single option.  When provided as string, the option is I<inherited> from
 a parent, allowing the sub-command to expose the same option as the
 parent. This gives freedom to put options and values either in the
 parent or in the descendant command, providing flexibility.
+
+As an alternative to setting options via the array ref pointed by key
+C<options>, it is also possible to implement a C<options> method in the
+command class; in this case, the method is supposed to return the
+I<list> of options (not an array reference):
+
+   sub options {
+      return (
+         {
+            getopt => 'foo|f!',
+            help   => 'do the foo thing',
+         },
+         {
+            getopt => 'bar|b=s',
+            help   => 'set the bar-itude',
+         }
+      );
+   }
 
 This is a YAML overview of how to set one option as a hash:
 

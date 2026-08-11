@@ -12,7 +12,7 @@ sub help        { return 'add a task' }
 sub description { return 'Add a task, optionally setting it as waiting' }
 sub supports    { return [qw< add new post >] }
 sub options {
-   return [
+   return (
       {
          help   => 'add the tasks as waiting',
          getopt => 'waiting|w!'
@@ -23,7 +23,7 @@ sub options {
          environment => 'VISUAL',
          default     => 'vi',
       }
-   ];
+   );
 }
 sub execute ($main, $config, $args) {
    my $id = strftime('%Y%m%d-%H%M%S', localtime);
